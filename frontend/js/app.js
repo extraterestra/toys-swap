@@ -59,8 +59,8 @@ async function go(route, params = {}) {
     if (!getToken()) return renderLogin();
     await loadMe();
 
-    if (route === 'dashboard') return renderDashboard();
-    if (route === 'add-item') return renderAddItem();
+    if (route === 'dashboard') return await renderDashboard();
+    if (route === 'add-item') return await renderAddItem();
     if (route === 'browse') return renderBrowse();
     if (route === 'exchanges') return renderExchanges();
     if (route === 'exchange-detail') return renderExchangeDetail(params.id);
@@ -134,8 +134,37 @@ function renderLogin() {
   };
 }
 
+function listedItemCardHtml(item) {
+  return `
+    <div class="item-card">
+      ${item.photo_path ? `<img src="${item.photo_path}" alt="" />` : ''}
+      <div class="body">
+        <h3>${item.title}</h3>
+        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
+          ${item.ai_condition_label || 'Pending'} (${item.ai_condition_score ?? '?'}/10)
+        </span>
+        <p class="muted">${item.owner_name ? `${item.owner_name} · ` : ''}${item.category || ''} · ${item.status || 'available'}</p>
+      </div>
+    </div>
+  `;
+}
+
+async function fillListedItems(containerId, { childId = null } = {}) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  try {
+    const mine = await api('/items/mine');
+    const items = childId ? mine.filter(i => i.child_id === childId) : mine;
+    container.innerHTML = items.length
+      ? items.map(listedItemCardHtml).join('')
+      : '<p class="muted">No toys or books listed yet.</p>';
+  } catch (err) {
+    container.innerHTML = `<p class="error">${err.message}</p>`;
+  }
+}
+
 // ---------- DASHBOARD ----------
-function renderDashboard() {
+async function renderDashboard() {
   if (!state.parent) return go('login');
   app.innerHTML = `
     <div class="card">
@@ -158,6 +187,10 @@ function renderDashboard() {
       </form>
       <p id="msg"></p>
     </div>
+    <div class="card">
+      <h3>Your listed toys & books</h3>
+      <div id="dashItems" class="grid"></div>
+    </div>
   `;
   document.getElementById('childForm').onsubmit = async (e) => {
     e.preventDefault();
@@ -165,15 +198,16 @@ function renderDashboard() {
     try {
       await api('/children', { method: 'POST', body: Object.fromEntries(f) });
       await loadMe();
-      renderDashboard();
+      await renderDashboard();
     } catch (err) {
       document.getElementById('msg').innerHTML = `<span class="error">${err.message}</span>`;
     }
   };
+  await fillListedItems('dashItems');
 }
 
 // ---------- ADD ITEM (with AI evaluation + 3D preview) ----------
-function renderAddItem() {
+async function renderAddItem() {
   if (!state.children.length) {
     app.innerHTML = `<div class="card">Add a child profile first from <a href="#" onclick="go('dashboard')">My Family</a>.</div>`;
     return;
@@ -181,7 +215,7 @@ function renderAddItem() {
   app.innerHTML = `
     <div class="card">
       <h2>List a Toy or Book</h2>
-      <p class="muted">Take a clear photo. Our AI will check its condition and write a friendly description.</p>
+      <p class="muted">Pick a photo from your gallery. Our AI will check its condition and write a friendly description.</p>
       <div class="row">Listing as: ${childChips('window.__selectChild')}</div>
       <form id="itemForm">
         <select name="category">
@@ -190,11 +224,16 @@ function renderAddItem() {
         </select>
         <input name="title" placeholder="Title (e.g. Lego Castle)" required />
         <textarea name="description" placeholder="Anything else to add? (optional)"></textarea>
-        <input type="file" name="photo" accept="image/*" capture="environment" required />
+        <label for="photo">Photo from gallery</label>
+        <input id="photo" type="file" name="photo" accept="image/*" required />
         <button class="primary" type="submit">Analyze & List</button>
       </form>
       <p id="msg"></p>
       <div id="result"></div>
+    </div>
+    <div class="card">
+      <h3>Your listed toys & books</h3>
+      <div id="myItems" class="grid"></div>
     </div>
   `;
   window.__selectChild = (id) => { state.activeChildId = id; renderAddItem(); };
@@ -209,10 +248,12 @@ function renderAddItem() {
       const item = await api('/items', { method: 'POST', body: fd, isForm: true });
       msg.innerHTML = `<span style="color:green">Listed! 🎉</span>`;
       renderItemResult(item);
+      await fillListedItems('myItems', { childId: state.activeChildId });
     } catch (err) {
       msg.innerHTML = `<span class="error">${err.message}</span>`;
     }
   };
+  await fillListedItems('myItems', { childId: state.activeChildId });
 }
 
 function conditionBadgeClass(score) {
