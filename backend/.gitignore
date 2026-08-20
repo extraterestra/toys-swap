@@ -1,0 +1,8 @@
+node_modules/
+.env
+toyswap.sqlite
+toyswap.sqlite-journal
+toyswap.sqlite-wal
+toyswap.sqlite-shm
+uploads/*
+!uploads/.gitkeep
