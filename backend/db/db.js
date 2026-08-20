@@ -1,105 +1,63 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const { Pool } = require('pg');
 const fs = require('fs');
+const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'toyswap.sqlite');
-const db = new Database(DB_PATH);
+function sslConfig() {
+  const url = process.env.DATABASE_URL || '';
+  if (!url) return false;
+  if (process.env.DATABASE_SSL === 'false') return false;
+  if (url.includes('localhost') || url.includes('127.0.0.1')) return false;
+  // Hosted Postgres (Railway) typically requires SSL.
+  return { rejectUnauthorized: false };
+}
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+if (!process.env.DATABASE_URL) {
+  console.warn('[WARN] DATABASE_URL is not set. Set it to a Postgres connection string.');
+}
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS parents (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  address_text TEXT,
-  lat REAL,
-  lng REAL,
-  created_at TEXT DEFAULT (datetime('now'))
-);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: sslConfig(),
+  max: 10
+});
 
-CREATE TABLE IF NOT EXISTS children (
-  id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL REFERENCES parents(id) ON DELETE CASCADE,
-  display_name TEXT NOT NULL,
-  birth_year INTEGER,
-  avatar_emoji TEXT DEFAULT '🧒',
-  created_at TEXT DEFAULT (datetime('now'))
-);
+async function query(text, params = []) {
+  return pool.query(text, params);
+}
 
-CREATE TABLE IF NOT EXISTS items (
-  id TEXT PRIMARY KEY,
-  child_id TEXT NOT NULL REFERENCES children(id) ON DELETE CASCADE,
-  category TEXT NOT NULL DEFAULT 'toy', -- toy | book (extensible later)
-  title TEXT NOT NULL,
-  description TEXT,
-  photo_path TEXT,
-  ai_condition_score INTEGER,      -- 1-10 scale, 10 = like new
-  ai_condition_label TEXT,         -- e.g. "Like new", "Good", "Worn", "Not exchangeable"
-  ai_description TEXT,             -- AI-generated description of the item
-  ai_exchangeable INTEGER DEFAULT 1, -- 0/1
-  moderation_status TEXT DEFAULT 'pending', -- pending | approved | rejected (photo moderation stub)
-  status TEXT DEFAULT 'available', -- available | pending_exchange | exchanged | removed
-  lat REAL,
-  lng REAL,
-  created_at TEXT DEFAULT (datetime('now'))
-);
+async function one(text, params = []) {
+  const { rows } = await pool.query(text, params);
+  return rows[0] || null;
+}
 
-CREATE TABLE IF NOT EXISTS canned_messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  text TEXT NOT NULL
-);
+async function many(text, params = []) {
+  const { rows } = await pool.query(text, params);
+  return rows;
+}
 
-CREATE TABLE IF NOT EXISTS exchange_requests (
-  id TEXT PRIMARY KEY,
-  offered_item_id TEXT NOT NULL REFERENCES items(id),
-  requested_item_id TEXT NOT NULL REFERENCES items(id),
-  from_child_id TEXT NOT NULL REFERENCES children(id),
-  to_child_id TEXT NOT NULL REFERENCES children(id),
-  duration_type TEXT DEFAULT 'forever', -- forever | temporary
-  duration_days INTEGER,
-  status TEXT DEFAULT 'pending_parent_approval',
-  -- pending_parent_approval -> approved -> delivery_requested -> delivered -> completed
-  -- (or) declined / cancelled
-  from_parent_approved INTEGER DEFAULT 0,
-  to_parent_approved INTEGER DEFAULT 0,
-  created_at TEXT DEFAULT (datetime('now'))
-);
+async function waitForDb(retries = 30) {
+  let lastError;
+  for (let i = 0; i < retries; i++) {
+    try {
+      await pool.query('SELECT 1');
+      return;
+    } catch (err) {
+      lastError = err;
+      console.log(`Waiting for Postgres (${i + 1}/${retries})...`);
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+  throw lastError || new Error('Could not connect to Postgres');
+}
 
-CREATE TABLE IF NOT EXISTS exchange_messages (
-  id TEXT PRIMARY KEY,
-  exchange_id TEXT NOT NULL REFERENCES exchange_requests(id) ON DELETE CASCADE,
-  sender_child_id TEXT NOT NULL REFERENCES children(id),
-  canned_message_id INTEGER REFERENCES canned_messages(id),
-  created_at TEXT DEFAULT (datetime('now'))
-);
+async function seed() {
+  await query(
+    `INSERT INTO admin_settings (key, value) VALUES ($1, $2)
+     ON CONFLICT (key) DO NOTHING`,
+    ['exchange_radius_km', process.env.DEFAULT_EXCHANGE_RADIUS_KM || '10']
+  );
 
-CREATE TABLE IF NOT EXISTS deliveries (
-  id TEXT PRIMARY KEY,
-  exchange_id TEXT NOT NULL REFERENCES exchange_requests(id),
-  delivery_order_ref TEXT,
-  status TEXT DEFAULT 'requested', -- requested | accepted | picked_up | delivered | failed
-  raw_response TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS admin_settings (
-  key TEXT PRIMARY KEY,
-  value TEXT
-);
-`);
-
-// Seed default admin settings
-const seedSetting = db.prepare(`INSERT OR IGNORE INTO admin_settings (key, value) VALUES (?, ?)`);
-seedSetting.run('exchange_radius_km', process.env.DEFAULT_EXCHANGE_RADIUS_KM || '10');
-
-// Seed canned messages (MVP: no freeform chat between children, for safety)
-const cannedCount = db.prepare(`SELECT COUNT(*) as c FROM canned_messages`).get().c;
-if (cannedCount === 0) {
-  const insertCanned = db.prepare(`INSERT INTO canned_messages (text) VALUES (?)`);
-  const defaults = [
+  const canned = [
     'Hi! 👋',
     'Is this still available?',
     'I would love to exchange with you!',
@@ -111,8 +69,32 @@ if (cannedCount === 0) {
     'See you soon!',
     'My parent will arrange delivery.'
   ];
-  const tx = db.transaction((msgs) => msgs.forEach(m => insertCanned.run(m)));
-  tx(defaults);
+  for (const text of canned) {
+    await query(
+      `INSERT INTO canned_messages (text) VALUES ($1) ON CONFLICT (text) DO NOTHING`,
+      [text]
+    );
+  }
 }
 
-module.exports = db;
+function splitSql(sql) {
+  return sql
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('--'))
+    .join('\n')
+    .split(';')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+async function initDb() {
+  await waitForDb();
+  const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+  for (const statement of splitSql(schema)) {
+    await query(statement);
+  }
+  await seed();
+  console.log('✔ Postgres schema ready');
+}
+
+module.exports = { pool, query, one, many, initDb };

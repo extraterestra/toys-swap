@@ -1,0 +1,15 @@
+node_modules
+backend/node_modules
+.git
+.gitignore
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+.env
+backend/.env
+backend/uploads
+!backend/uploads/.gitkeep
+.DS_Store
+README.md
+PROJECT_PLAN.md

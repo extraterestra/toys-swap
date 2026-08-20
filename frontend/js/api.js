@@ -20,6 +20,7 @@ async function api(path, { method = 'GET', body = null, isForm = false } = {}) {
   const data = contentType.includes('application/json') ? await res.json() : await res.text();
 
   if (!res.ok) {
+    if (res.status === 401) clearToken();
     const message = (data && data.error) ? data.error : `Request failed (${res.status})`;
     throw new Error(message);
   }

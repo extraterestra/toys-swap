@@ -29,6 +29,12 @@ function logout() { clearToken(); state.parent = null; state.children = []; go('
 async function loadMe() {
   if (!getToken()) return;
   const data = await api('/parents/me');
+  if (!data.parent) {
+    clearToken();
+    state.parent = null;
+    state.children = [];
+    throw new Error('Account not found. Please log in again.');
+  }
   state.parent = data.parent;
   state.children = data.children;
   if (!state.activeChildId && state.children.length) state.activeChildId = state.children[0].id;
@@ -60,6 +66,15 @@ async function go(route, params = {}) {
     if (route === 'exchange-detail') return renderExchangeDetail(params.id);
     if (route === 'admin') return renderAdmin();
   } catch (err) {
+    if (!getToken()) {
+      state.parent = null;
+      state.children = [];
+      renderNav();
+      renderLogin();
+      const msg = document.getElementById('msg');
+      if (msg) msg.innerHTML = `<span class="error">${err.message}</span>`;
+      return;
+    }
     app.innerHTML = `<div class="card error">⚠ ${err.message}</div>`;
   }
 }
@@ -121,9 +136,10 @@ function renderLogin() {
 
 // ---------- DASHBOARD ----------
 function renderDashboard() {
+  if (!state.parent) return go('login');
   app.innerHTML = `
     <div class="card">
-      <h2>Welcome, ${state.parent.name} 👋</h2>
+      <h2>Welcome, ${state.parent?.name || 'there'} 👋</h2>
       <p class="muted">Your children's profiles. Add one to get started.</p>
       <div>${state.children.map(c => `<span class="child-chip">${c.avatar_emoji} ${c.display_name} ${c.birth_year ? `(b. ${c.birth_year})` : ''}</span>`).join('') || '<em>No children added yet.</em>'}</div>
     </div>

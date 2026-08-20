@@ -26,9 +26,10 @@ to clothes, shoes, and other categories, plus safe games.
 | Layer | Choice | Why |
 |---|---|---|
 | Backend | Node.js + Express | Fast to build, huge ecosystem, single language with frontend |
-| DB | SQLite (`better-sqlite3`) | Zero-install, file-based, perfect for local dev/demo |
+| DB | Postgres (`pg`) | Same engine as Railway; ready for PostGIS later |
 | Auth | JWT + bcrypt | Simple, stateless, well understood |
-| Uploads | Multer (local disk) | No cloud dependency needed for MVP |
+| Uploads | Multer on a Docker/Railway volume | Survives restarts; swap to S3/R2 when scaling |
+| Infra | Docker Compose locally, Dockerfile + `railway.toml` on Railway | One image from laptop to production |
 | AI condition assessment | Claude vision API (`claude-sonnet-4-6`) with mock fallback | Real multimodal reasoning about photo condition; fallback keeps MVP runnable offline |
 | 3D preview | Three.js (client-side) | No server cost; good enough for MVP visualization |
 | Frontend | Vanilla JS SPA | Zero build tooling — `unzip && run` |
@@ -78,8 +79,8 @@ to clothes, shoes, and other categories, plus safe games.
 
 `parents` → `children` → `items` → `exchange_requests` → `deliveries`, plus
 `exchange_messages` (canned-only), `canned_messages`, `admin_settings`.
-See `backend/db/db.js` for the exact schema — it's deliberately close to what
-production would need, just SQLite instead of Postgres.
+See `backend/db/schema.sql` for the exact schema — it is Postgres now, close to
+what production needs, and ready for a PostGIS column later without renaming tables.
 
 ## 6. Business Model
 
@@ -137,4 +138,4 @@ canned-message-only chat · admin radius control.
 | Unsafe/broken items exchanged | AI condition check + `exchangeable` flag; add human spot-checks at scale |
 | Regulatory (COPPA/GDPR-K) | Parent-gated accounts from day one; legal review before Phase 1 launch |
 | Delivery API mismatch | Isolated adapter module (`services/delivery.js`) — one file to update once real contract is known |
-| SQLite doesn't scale / isn't durable on Railway | Planned Postgres migration is Phase 1, not an afterthought |
+| SQLite doesn't scale / isn't durable on Railway | Postgres is the MVP database; PostGIS can be enabled on the same instance |

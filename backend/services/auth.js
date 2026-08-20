@@ -12,7 +12,8 @@ function requireParentAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Missing auth token' });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.parentId = decoded.parentId;
+    req.parentId = decoded.parentId || decoded.id;
+    if (!req.parentId) return res.status(401).json({ error: 'Invalid or expired token' });
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });

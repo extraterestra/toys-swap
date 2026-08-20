@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: toyswap
+      POSTGRES_PASSWORD: toyswap
+      POSTGRES_DB: toyswap
+    ports:
+      - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toyswap -d toyswap"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://toyswap:toyswap@db:5432/toyswap
+      DATABASE_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:-change_me_to_a_long_random_string}
+      PORT: 4000
+      NODE_ENV: production
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DELIVERY_API_URL: ${DELIVERY_API_URL:-https://delivery-rabka.up.railway.app/}
+      DEFAULT_EXCHANGE_RADIUS_KM: ${DEFAULT_EXCHANGE_RADIUS_KM:-10}
+      UPLOADS_DIR: /app/backend/uploads
+    volumes:
+      - uploads:/app/backend/uploads
+      # Live-reload local source so `up -d` without --build still serves current JS/API.
+      - ./frontend:/app/frontend
+      - ./backend:/app/backend
+      - web_node_modules:/app/backend/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
+  web_node_modules:
