@@ -7,7 +7,18 @@ const state = {
 const app = document.getElementById('app');
 const nav = document.getElementById('nav');
 
+function closeMobileNav() {
+  document.body.classList.remove('nav-open');
+  const btn = document.getElementById('navToggle');
+  if (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', 'Open menu');
+    btn.textContent = '☰';
+  }
+}
+
 function renderNav() {
+  closeMobileNav();
   nav.innerHTML = '';
   if (!getToken()) {
     nav.innerHTML = `<button onclick="go('login')">Parent Login</button><button onclick="go('register')">Register Family</button>`;
@@ -15,7 +26,7 @@ function renderNav() {
   }
   const buttons = [
     ['dashboard', 'My Family'],
-    ['add-item', '+ List a Toy/Book'],
+    ['add-item', 'My listings'],
     ['browse', 'Browse Nearby'],
     ['exchanges', 'My Exchanges'],
     ['admin', 'Admin']
@@ -50,7 +61,11 @@ function childChips(onSelect) {
 
 // ---------- ROUTER ----------
 async function go(route, params = {}) {
-  window.location.hash = route;
+  if ((route === 'edit-item' || route === 'item-detail' || route === 'exchange-detail') && params.id) {
+    window.location.hash = `${route}/${params.id}`;
+  } else {
+    window.location.hash = route;
+  }
   renderNav();
   try {
     if (route === 'login') return renderLogin();
@@ -61,6 +76,7 @@ async function go(route, params = {}) {
 
     if (route === 'dashboard') return await renderDashboard();
     if (route === 'add-item') return await renderAddItem();
+    if (route === 'edit-item' || route === 'item-detail') return await renderItemDetail(params.id);
     if (route === 'browse') return renderBrowse();
     if (route === 'exchanges') return renderExchanges();
     if (route === 'exchange-detail') return renderExchangeDetail(params.id);
@@ -134,32 +150,74 @@ function renderLogin() {
   };
 }
 
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatDate(iso) {
+  if (!iso) return 'Unknown date';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Unknown date';
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function swapStatusLabel(status) {
+  const labels = {
+    pending_parent_approval: 'Waiting for parent approval',
+    approved: 'Approved',
+    delivery_requested: 'Sent to delivery',
+    declined: 'Declined'
+  };
+  return labels[status] || status || 'Unknown';
+}
+
 function listedItemCardHtml(item) {
   return `
-    <div class="item-card">
+    <div class="item-card" role="button" tabindex="0" onclick="go('item-detail', {id:'${item.id}'})">
       ${item.photo_path ? `<img src="${item.photo_path}" alt="" />` : ''}
       <div class="body">
-        <h3>${item.title}</h3>
+        <h3>${escapeHtml(item.title)}</h3>
         <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-          ${item.ai_condition_label || 'Pending'} (${item.ai_condition_score ?? '?'}/10)
+          ${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)
         </span>
-        <p class="muted">${item.owner_name ? `${item.owner_name} · ` : ''}${item.category || ''} · ${item.status || 'available'}</p>
+        <p class="muted">${item.owner_name ? `${escapeHtml(item.owner_name)} · ` : ''}${escapeHtml(item.category || '')} · ${escapeHtml(item.status || 'available')}</p>
+        <p class="muted">Listed ${escapeHtml(formatDate(item.created_at))}</p>
+        <div class="item-actions">
+          <button type="button" class="small" onclick="event.stopPropagation(); go('item-detail', {id:'${item.id}'})">Open details</button>
+        </div>
       </div>
     </div>
   `;
 }
 
-async function fillListedItems(containerId, { childId = null } = {}) {
+async function fillListedItems(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   try {
     const mine = await api('/items/mine');
-    const items = childId ? mine.filter(i => i.child_id === childId) : mine;
-    container.innerHTML = items.length
-      ? items.map(listedItemCardHtml).join('')
-      : '<p class="muted">No toys or books listed yet.</p>';
+    container.innerHTML = mine.length
+      ? mine.map(listedItemCardHtml).join('')
+      : '<p class="muted">No toys or books listed yet. Use Add listing below to create one.</p>';
   } catch (err) {
     container.innerHTML = `<p class="error">${err.message}</p>`;
+  }
+}
+
+async function deleteListing(id) {
+  if (!confirm('Delete this listing? This cannot be undone.')) return;
+  try {
+    await api(`/items/${id}`, { method: 'DELETE' });
+    const route = (window.location.hash || '').replace(/^#/, '').split('/')[0];
+    if (route === 'edit-item' || route === 'item-detail') return go('add-item');
+    await fillListedItems(route === 'add-item' ? 'myItems' : 'dashItems');
+    const result = document.getElementById('result');
+    if (result) result.innerHTML = '';
+  } catch (err) {
+    alert(err.message);
   }
 }
 
@@ -168,9 +226,17 @@ async function renderDashboard() {
   if (!state.parent) return go('login');
   app.innerHTML = `
     <div class="card">
-      <h2>Welcome, ${state.parent?.name || 'there'} 👋</h2>
+      <h2>Welcome, ${escapeHtml(state.parent?.name || 'there')} 👋</h2>
       <p class="muted">Your children's profiles. Add one to get started.</p>
-      <div>${state.children.map(c => `<span class="child-chip">${c.avatar_emoji} ${c.display_name} ${c.birth_year ? `(b. ${c.birth_year})` : ''}</span>`).join('') || '<em>No children added yet.</em>'}</div>
+      <div>${state.children.map(c => `<span class="child-chip">${c.avatar_emoji} ${escapeHtml(c.display_name)} ${c.birth_year ? `(b. ${c.birth_year})` : ''}</span>`).join('') || '<em>No children added yet.</em>'}</div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3>Your listings</h3>
+        <button type="button" class="small" onclick="go('add-item')">+ Add listing</button>
+      </div>
+      <p class="muted">Open a toy to see details, swap history, photos, and edit or delete it.</p>
+      <div id="dashItems" class="grid"></div>
     </div>
     <div class="card">
       <h3>Add a Child Profile</h3>
@@ -186,10 +252,6 @@ async function renderDashboard() {
         <button class="primary" type="submit">Add Child</button>
       </form>
       <p id="msg"></p>
-    </div>
-    <div class="card">
-      <h3>Your listed toys & books</h3>
-      <div id="dashItems" class="grid"></div>
     </div>
   `;
   document.getElementById('childForm').onsubmit = async (e) => {
@@ -214,7 +276,15 @@ async function renderAddItem() {
   }
   app.innerHTML = `
     <div class="card">
-      <h2>List a Toy or Book</h2>
+      <div class="card-head">
+        <h2>Your listings</h2>
+        <button type="button" class="small" onclick="document.getElementById('itemForm').scrollIntoView({behavior:'smooth'})">+ Add listing</button>
+      </div>
+      <p class="muted">Tap a listing to open its details. Add a new one with the form under the list.</p>
+      <div id="myItems" class="grid"></div>
+    </div>
+    <div class="card">
+      <h2>Add a toy or book</h2>
       <p class="muted">Pick a photo from your gallery. Our AI will check its condition and write a friendly description.</p>
       <div class="row">Listing as: ${childChips('window.__selectChild')}</div>
       <form id="itemForm">
@@ -231,10 +301,6 @@ async function renderAddItem() {
       <p id="msg"></p>
       <div id="result"></div>
     </div>
-    <div class="card">
-      <h3>Your listed toys & books</h3>
-      <div id="myItems" class="grid"></div>
-    </div>
   `;
   window.__selectChild = (id) => { state.activeChildId = id; renderAddItem(); };
 
@@ -248,12 +314,12 @@ async function renderAddItem() {
       const item = await api('/items', { method: 'POST', body: fd, isForm: true });
       msg.innerHTML = `<span style="color:green">Listed! 🎉</span>`;
       renderItemResult(item);
-      await fillListedItems('myItems', { childId: state.activeChildId });
+      await fillListedItems('myItems');
     } catch (err) {
       msg.innerHTML = `<span class="error">${err.message}</span>`;
     }
   };
-  await fillListedItems('myItems', { childId: state.activeChildId });
+  await fillListedItems('myItems');
 }
 
 function conditionBadgeClass(score) {
@@ -268,16 +334,134 @@ function renderItemResult(item) {
     <div class="item-card" style="margin-top:16px;">
       ${item.photo_path ? `<img src="${item.photo_path}" />` : ''}
       <div class="body">
-        <h3>${item.title}</h3>
+        <h3>${escapeHtml(item.title)}</h3>
         <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-          ${item.ai_condition_label || 'Pending'} (${item.ai_condition_score ?? '?'}/10)
+          ${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)
         </span>
-        <p>${item.ai_description || ''}</p>
+        <p>${escapeHtml(item.ai_description || '')}</p>
+        <div class="item-actions">
+          <button type="button" class="small" onclick="go('item-detail', {id:'${item.id}'})">Open details</button>
+          <button type="button" class="danger" onclick="deleteListing('${item.id}')">Delete</button>
+        </div>
         <div class="viewer3d" id="viewer-${item.id}"></div>
       </div>
     </div>
   `;
   if (item.photo_path) render3DPreview(`viewer-${item.id}`, item.photo_path);
+}
+
+async function renderItemDetail(id) {
+  if (!id) return go('add-item');
+  const item = await api(`/items/${id}`);
+  const photos = item.photos || [];
+  const swaps = item.swaps || [];
+  const photoTiles = photos.length
+    ? photos.map(p => `
+        <div class="photo-tile">
+          <img src="${p.photo_path}" alt="" />
+          <button type="button" class="danger" onclick="removeListingPhoto('${item.id}', '${p.id}')">Remove</button>
+        </div>
+      `).join('')
+    : '<p class="muted">No photos yet.</p>';
+  const swapRows = swaps.length
+    ? swaps.map(s => `
+        <div class="swap-row">
+          <p><strong>${escapeHtml(s.offered_title)}</strong> ↔ <strong>${escapeHtml(s.requested_title)}</strong></p>
+          <p class="muted">${escapeHtml(s.from_child_name)} → ${escapeHtml(s.to_child_name)} · ${escapeHtml(swapStatusLabel(s.status))} · ${escapeHtml(s.duration_type || '')}</p>
+          <p class="muted">${escapeHtml(formatDate(s.created_at))}</p>
+        </div>
+      `).join('')
+    : '<p class="muted">No swap history yet.</p>';
+
+  app.innerHTML = `
+    <div class="card">
+      <button type="button" class="small" onclick="go('add-item')">← Back to listings</button>
+      <h2>${escapeHtml(item.title)}</h2>
+      <p class="muted">Listed ${escapeHtml(formatDate(item.created_at))} · ${escapeHtml(item.owner_name || '')} · ${escapeHtml(item.category || '')} · ${escapeHtml(item.status || 'available')}</p>
+      <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
+        ${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)
+      </span>
+      ${item.ai_description ? `<p>${escapeHtml(item.ai_description)}</p>` : ''}
+    </div>
+    <div class="card">
+      <h3>Photos</h3>
+      <div class="photo-grid">${photoTiles}</div>
+      <form id="photoForm" class="photo-form">
+        <label for="addPhotos">Add photos from gallery</label>
+        <input id="addPhotos" type="file" name="photos" accept="image/*" multiple />
+        <button class="primary" type="submit">Add photos</button>
+      </form>
+      <p id="photoMsg"></p>
+    </div>
+    <div class="card">
+      <h3>Edit listing</h3>
+      <form id="editForm">
+        <select name="category">
+          <option value="toy" ${item.category === 'toy' ? 'selected' : ''}>Toy</option>
+          <option value="book" ${item.category === 'book' ? 'selected' : ''}>Book</option>
+        </select>
+        <input name="title" placeholder="Title" value="${escapeHtml(item.title)}" required />
+        <textarea name="description" placeholder="Description">${escapeHtml(item.description || '')}</textarea>
+        <button class="primary" type="submit">Save description</button>
+      </form>
+      <p id="msg"></p>
+    </div>
+    <div class="card">
+      <h3>Swap history</h3>
+      ${swapRows}
+    </div>
+    <div class="card">
+      <button type="button" class="danger" onclick="deleteListing('${item.id}')">Delete listing</button>
+    </div>
+  `;
+
+  document.getElementById('editForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('msg');
+    const f = new FormData(e.target);
+    msg.innerHTML = 'Saving...';
+    try {
+      await api(`/items/${item.id}`, {
+        method: 'PUT',
+        body: {
+          title: f.get('title'),
+          description: f.get('description'),
+          category: f.get('category')
+        }
+      });
+      msg.innerHTML = `<span style="color:green">Saved!</span>`;
+      await renderItemDetail(item.id);
+    } catch (err) {
+      msg.innerHTML = `<span class="error">${err.message}</span>`;
+    }
+  };
+
+  document.getElementById('photoForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('photoMsg');
+    const input = document.getElementById('addPhotos');
+    if (!input.files.length) {
+      msg.innerHTML = `<span class="error">Choose at least one photo</span>`;
+      return;
+    }
+    msg.innerHTML = 'Uploading...';
+    try {
+      await api(`/items/${item.id}/photos`, { method: 'POST', body: new FormData(e.target), isForm: true });
+      await renderItemDetail(item.id);
+    } catch (err) {
+      msg.innerHTML = `<span class="error">${err.message}</span>`;
+    }
+  };
+}
+
+async function removeListingPhoto(itemId, photoId) {
+  if (!confirm('Remove this photo?')) return;
+  try {
+    await api(`/items/${itemId}/photos/${photoId}`, { method: 'DELETE' });
+    await renderItemDetail(itemId);
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 // Lightweight MVP "3D preview": a rotating textured card using the uploaded
@@ -499,5 +683,15 @@ async function renderAdmin() {
 }
 
 // ---------- INIT ----------
+document.getElementById('navToggle')?.addEventListener('click', () => {
+  const open = document.body.classList.toggle('nav-open');
+  const btn = document.getElementById('navToggle');
+  btn.setAttribute('aria-expanded', String(open));
+  btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  btn.textContent = open ? '✕' : '☰';
+});
 renderNav();
-go(getToken() ? 'dashboard' : 'login');
+const hash = (location.hash || '').replace(/^#/, '');
+const [initialRoute, initialId] = hash.split('/');
+if (initialRoute) go(initialRoute, initialId ? { id: initialId } : {});
+else go(getToken() ? 'dashboard' : 'login');

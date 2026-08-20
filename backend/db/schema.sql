@@ -85,3 +85,11 @@ CREATE INDEX IF NOT EXISTS items_child_id_idx ON items (child_id);
 CREATE INDEX IF NOT EXISTS items_status_idx ON items (status);
 CREATE INDEX IF NOT EXISTS exchange_from_child_idx ON exchange_requests (from_child_id);
 CREATE INDEX IF NOT EXISTS exchange_to_child_idx ON exchange_requests (to_child_id);
+
+CREATE TABLE IF NOT EXISTS item_photos (
+  id TEXT PRIMARY KEY,
+  item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  photo_path TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS item_photos_item_id_idx ON item_photos (item_id);

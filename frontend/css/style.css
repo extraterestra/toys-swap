@@ -22,6 +22,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 16px 24px;
   background: var(--card);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -32,7 +34,20 @@ body {
 
 .brand { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
 
-#nav { display: flex; gap: 10px; }
+.nav-toggle {
+  display: none;
+  background: var(--secondary);
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 #nav button {
   background: var(--secondary);
   border: none;
@@ -44,6 +59,55 @@ body {
 }
 #nav button.secondary { background: var(--muted); }
 #nav button:hover { opacity: 0.9; }
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.card-head h3 { margin: 0; }
+
+.item-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.item-actions button { flex: 1; min-height: 44px; }
+.edit-preview {
+  width: 100%;
+  max-width: 320px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  margin: 8px 0 16px;
+  background: #eee;
+}
+
+@media (max-width: 768px) {
+  .topbar { padding: 10px 14px; }
+  .brand { font-size: 1.15rem; }
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  #nav {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 0 4px;
+  }
+  body.nav-open #nav { display: flex; }
+  #nav button {
+    width: 100%;
+    text-align: left;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 1rem;
+  }
+  form { max-width: 100%; }
+  .container { margin: 16px auto; padding: 0 12px 48px; }
+  .grid { grid-template-columns: 1fr; gap: 12px; }
+  .item-card img { height: 180px; }
+  button.danger, .item-actions .small { min-height: 44px; font-size: 1rem; }
+}
 
 .container { max-width: 960px; margin: 24px auto; padding: 0 16px 60px; }
 
@@ -59,7 +123,14 @@ h1, h2, h3 { margin-top: 0; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 
-.item-card { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); display:flex; flex-direction:column;}
+.item-card { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); display:flex; flex-direction:column; cursor: pointer;}
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+.photo-tile { position: relative; }
+.photo-tile img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; background: #eee; display: block; }
+.photo-tile .danger { position: absolute; top: 8px; right: 8px; }
+.photo-form { margin-top: 12px; max-width: 420px; }
+.swap-row { padding: 10px 0; border-bottom: 1px solid #eee; }
+.swap-row p { margin: 0 0 4px; }
 .item-card img { width: 100%; height: 150px; object-fit: cover; background: #eee; }
 .item-card .body { padding: 12px; flex:1; display:flex; flex-direction:column; gap:6px;}
 .badge { display:inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; color:white; }
@@ -88,6 +159,16 @@ button.primary {
 }
 button.primary:hover { opacity: 0.9; }
 button.small { padding: 6px 12px; font-size: 0.85rem; border-radius: 8px; border:none; background: var(--secondary); color:white; cursor:pointer;}
+button.danger {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
 
 .child-chip {
   display:inline-flex; align-items:center; gap:6px;
