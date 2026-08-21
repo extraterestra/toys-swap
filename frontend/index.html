@@ -4,24 +4,33 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ToySwap 🧸 — Wymiana zabawek i książek</title>
-<link rel="stylesheet" href="/css/style.css?v=10" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/css/style.css?v=12" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+<div class="promo"><span class="promo-copy">Bezpieczna wymiana zabawek — tylko pod opieką rodziców</span></div>
 <header class="topbar">
-  <div class="brand" onclick="go(getToken() ? 'dashboard' : 'home')" role="link">🧸 ToySwap</div>
   <button type="button" class="nav-toggle" id="navToggle" aria-label="Otwórz menu" aria-expanded="false">☰</button>
+  <div class="brand" onclick="go(getToken() ? 'dashboard' : 'home')" role="link">
+    <span class="brand-mark">🧸</span>
+    <span class="brand-name">ToySwap</span>
+  </div>
   <nav id="nav"></nav>
 </header>
 
 <main id="app" class="container"></main>
 
 <footer class="footer">
-  Wersja demo — tylko pod opieką rodziców. Brak otwartego czatu między dziećmi.
+  <div class="footer-ready">Gotowi na wymianę?</div>
+  <button type="button" class="primary footer-cta-btn" onclick="findSwapsNearMe()">Znajdź wymiany w okolicy</button>
+  <span class="footer-copy">Wersja demo — tylko pod opieką rodziców. Brak otwartego czatu między dziećmi.</span>
 </footer>
 
-<script src="/js/api.js?v=10"></script>
-<script src="/js/i18n.js?v=10"></script>
-<script src="/js/app.js?v=10"></script>
+<script src="/js/api.js?v=12"></script>
+<script src="/js/i18n.js?v=12"></script>
+<script src="/js/app.js?v=12"></script>
 </body>
 </html>

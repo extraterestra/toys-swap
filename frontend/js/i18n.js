@@ -50,7 +50,15 @@ const I18N = {
       during2: 'Oboje rodzice oglądają ogłoszenia i zatwierdzają albo odrzucają.',
       during3: 'Jeśli oboje zatwierdzą, ToySwap zamawia dostawę. Rodzice płacą tylko tę opłatę.',
       during4: 'Kurier odbiera i dowozi. Rodziny zostają w domu — bez spotkań.',
-      alreadyAccount: 'Mam już konto rodziny'
+      alreadyAccount: 'Mam już konto rodziny',
+      promo: 'Bezpieczna wymiana zabawek — tylko pod opieką rodziców',
+      footerReady: 'Gotowi na wymianę?',
+      value1Title: 'Bezpiecznie',
+      value1Body: 'Konta tylko dla rodziców. Obie rodziny zatwierdzają wymianę, zanim pojedzie kurier.',
+      value2Title: 'Lokalnie',
+      value2Body: 'Widzisz ogłoszenia w okolicy — ok. 10 km. Nigdy dokładnego adresu.',
+      value3Title: 'Przystępnie',
+      value3Body: 'Wystawianie i dopasowanie są darmowe. Płacisz tylko opłatę za dostawę.'
     },
     auth: {
       back: '← Wróć do ToySwap',
@@ -292,7 +300,15 @@ const I18N = {
       during2: 'Both parents review the listings and approve or decline.',
       during3: 'If both approve, ToySwap requests a delivery. Parents are charged only that delivery fee.',
       during4: 'The courier collects and drops off. Families stay at home — no meetups required.',
-      alreadyAccount: 'I already have a family account'
+      alreadyAccount: 'I already have a family account',
+      promo: 'The parent-supervised way to swap toys nearby',
+      footerReady: 'Ready to swap?',
+      value1Title: 'Safe',
+      value1Body: 'Parent-only accounts. Both families approve before a courier is booked.',
+      value2Title: 'Local',
+      value2Body: 'See listings nearby — about 10 km. Never an exact street address.',
+      value3Title: 'Affordable',
+      value3Body: 'Listing and matching are free. You only pay the delivery fee.'
     },
     auth: {
       back: '← Back to ToySwap',
@@ -531,8 +547,14 @@ function tError(message) {
 function applyChrome() {
   document.documentElement.lang = getLang() === 'en' ? 'en' : 'pl';
   document.title = t('meta.title');
-  const footer = document.querySelector('.footer');
+  const promo = document.querySelector('.promo-copy');
+  if (promo) promo.textContent = t('home.promo');
+  const footer = document.querySelector('.footer-copy');
   if (footer) footer.textContent = t('meta.footer');
+  const ready = document.querySelector('.footer-ready');
+  if (ready) ready.textContent = t('home.footerReady');
+  const cta = document.querySelector('.footer-cta-btn');
+  if (cta) cta.textContent = t('home.ctaFind');
 }
 
 function languageNavHtml() {

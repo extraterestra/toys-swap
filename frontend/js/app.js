@@ -26,7 +26,7 @@ function renderNav() {
   nav.innerHTML = '';
   const lang = languageNavHtml();
   if (!getToken()) {
-    nav.innerHTML = `<button onclick="go('home')">${t('nav.home')}</button><button onclick="go('login')">${t('nav.login')}</button><button onclick="go('register')">${t('nav.register')}</button>${lang}`;
+    nav.innerHTML = `<button onclick="go('home')">${t('nav.home')}</button><button onclick="go('login')">${t('nav.login')}</button><button class="nav-cta" onclick="go('register')">${t('nav.register')}</button>${lang}`;
     return;
   }
   const buttons = [
@@ -112,7 +112,7 @@ function findSwapsNearMe() {
 
 function renderHome(params = {}) {
   app.innerHTML = `
-    <section class="hero">
+    <section class="page-hero">
       <h1>${t('home.heroTitle')}</h1>
       <p class="lede">${t('home.heroLede')}</p>
       <div class="cta-row">
@@ -121,30 +121,42 @@ function renderHome(params = {}) {
       </div>
     </section>
 
-    <div class="card" id="how">
-      <h2>${t('home.howTitle')}</h2>
-      <div class="steps">
-        <div class="step"><strong>${t('home.step1Title')}</strong>${t('home.step1Body')}</div>
-        <div class="step"><strong>${t('home.step2Title')}</strong>${t('home.step2Body')}</div>
-        <div class="step"><strong>${t('home.step3Title')}</strong>${t('home.step3Body')}</div>
-        <div class="step"><strong>${t('home.step4Title')}</strong>${t('home.step4Body')}</div>
+    <h2 id="how">${t('home.howTitle')}</h2>
+    <div class="how-steps">
+      <article class="how-step">
+        <h2>${t('home.step1Title')}</h2>
+        <p>${t('home.step1Body')}</p>
+      </article>
+      <article class="how-step">
+        <h2>${t('home.step2Title')}</h2>
+        <p>${t('home.step2Body')}</p>
+      </article>
+      <article class="how-step">
+        <h2>${t('home.step3Title')}</h2>
+        <p>${t('home.step3Body')}</p>
+      </article>
+      <article class="how-step">
+        <h2>${t('home.step4Title')}</h2>
+        <p>${t('home.step4Body')}</p>
+      </article>
+    </div>
+
+    <div class="values">
+      <div class="value-card mint">
+        <h3>${t('home.value1Title')}</h3>
+        <p>${t('home.value1Body')}</p>
+      </div>
+      <div class="value-card yellow">
+        <h3>${t('home.value2Title')}</h3>
+        <p>${t('home.value2Body')}</p>
+      </div>
+      <div class="value-card pink">
+        <h3>${t('home.value3Title')}</h3>
+        <p>${t('home.value3Body')}</p>
       </div>
     </div>
 
-    <div class="home-grid">
-      <div class="card">
-        <h2>${t('home.whereTitle')}</h2>
-        <p>${t('home.whereBody')}</p>
-        <p class="muted">${t('home.whereMuted')}</p>
-      </div>
-      <div class="card">
-        <h2>${t('home.costTitle')}</h2>
-        <p>${t('home.costBody')}</p>
-        <p class="muted">${t('home.costMuted')}</p>
-      </div>
-    </div>
-
-    <div class="card" id="safety">
+    <div class="band" id="safety">
       <h2>${t('home.safetyTitle')}</h2>
       <ul>
         <li>${t('home.safety1')}</li>
@@ -155,7 +167,7 @@ function renderHome(params = {}) {
       </ul>
     </div>
 
-    <div class="card">
+    <div class="band">
       <h2>${t('home.duringTitle')}</h2>
       <ol>
         <li>${t('home.during1')}</li>
@@ -286,14 +298,15 @@ function durationLabel(d) {
 }
 
 function listedItemCardHtml(item) {
+  const score = `${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)`;
   return `
     <div class="item-card" role="button" tabindex="0" onclick="go('item-detail', {id:'${item.id}'})">
-      ${item.photo_path ? `<img src="${item.photo_path}" alt="" />` : ''}
-      <div class="body">
-        <h3>${escapeHtml(item.title)}</h3>
-        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-          ${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)
-        </span>
+      <div class="item-media">
+        ${item.photo_path ? `<img src="${item.photo_path}" alt="" />` : '<div class="item-ph"></div>'}
+      </div>
+      <h3>${escapeHtml(item.title)}</h3>
+      <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${score}</span>
+      <div class="item-meta">
         <p class="muted">${item.owner_name ? `${escapeHtml(item.owner_name)} · ` : ''}${escapeHtml(categoryLabel(item.category))} · ${escapeHtml(itemStatusLabel(item.status))}</p>
         <p class="muted">${t('listings.listedOn', { date: formatDate(item.created_at) })}</p>
         <div class="item-actions">
@@ -441,13 +454,15 @@ function conditionBadgeClass(score) {
 function renderItemResult(item) {
   const resultDiv = document.getElementById('result');
   resultDiv.innerHTML = `
-    <div class="item-card" style="margin-top:16px;">
-      ${item.photo_path ? `<img src="${item.photo_path}" />` : ''}
-      <div class="body">
-        <h3>${escapeHtml(item.title)}</h3>
-        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-          ${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)
-        </span>
+    <div class="item-card" style="margin-top:16px; max-width: 360px;">
+      <div class="item-media">
+        ${item.photo_path ? `<img src="${item.photo_path}" />` : '<div class="item-ph"></div>'}
+      </div>
+      <h3>${escapeHtml(item.title)}</h3>
+      <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
+        ${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)
+      </span>
+      <div class="item-meta">
         <p>${escapeHtml(item.ai_description || '')}</p>
         <div class="item-actions">
           <button type="button" class="small" onclick="go('item-detail', {id:'${item.id}'})">${t('listings.openDetails')}</button>
@@ -643,18 +658,21 @@ async function renderBrowse() {
 async function loadNearby() {
   const data = await api(`/items/nearby?child_id=${state.activeChildId}`);
   const container = document.getElementById('items');
-  container.innerHTML = `<p class="muted">${t('browse.within', { km: data.radius_km })}</p>` +
-    (data.items.length ? '' : `<p>${t('browse.none')}</p>`) +
+  container.innerHTML = `<p class="muted" style="grid-column:1/-1">${t('browse.within', { km: data.radius_km })}</p>` +
+    (data.items.length ? '' : `<p style="grid-column:1/-1">${t('browse.none')}</p>`) +
     data.items.map(item => `
       <div class="item-card">
-        ${item.photo_path ? `<img src="${item.photo_path}" />` : ''}
-        <div class="body">
-          <h3>${item.title}</h3>
-          <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score}/10)</span>
-          <p>${item.ai_description || ''}</p>
+        <div class="item-media">
+          ${item.photo_path ? `<img src="${item.photo_path}" />` : '<div class="item-ph"></div>'}
+        </div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score}/10)</span>
+        <div class="item-meta">
           <p class="muted">${t('browse.by', { avatar: item.owner_avatar || '', name: item.owner_name || '' })}</p>
           <p class="distance">${t('browse.away', { km: item.distance_km })}</p>
-          <button class="small" onclick="proposeExchange('${item.id}')">${t('browse.propose')}</button>
+          <div class="item-actions">
+            <button class="small" onclick="proposeExchange('${item.id}')">${t('browse.propose')}</button>
+          </div>
         </div>
       </div>
     `).join('');
