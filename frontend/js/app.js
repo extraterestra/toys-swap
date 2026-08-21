@@ -65,7 +65,7 @@ function childChips(onSelect) {
 
 // ---------- ROUTER ----------
 async function go(route, params = {}) {
-  if ((route === 'edit-item' || route === 'item-detail' || route === 'exchange-detail') && params.id) {
+  if ((route === 'edit-item' || route === 'item-detail' || route === 'exchange-detail' || route === 'admin-family') && params.id) {
     window.location.hash = `${route}/${params.id}`;
   } else {
     window.location.hash = route;
@@ -85,7 +85,8 @@ async function go(route, params = {}) {
     if (route === 'browse') return renderBrowse();
     if (route === 'exchanges') return renderExchanges();
     if (route === 'exchange-detail') return renderExchangeDetail(params.id);
-    if (route === 'admin') return renderAdmin();
+    if (route === 'admin') return await renderAdmin();
+    if (route === 'admin-family') return await renderAdminFamily(params.id);
   } catch (err) {
     if (!getToken()) {
       state.parent = null;
@@ -656,11 +657,15 @@ async function renderAdmin() {
     app.innerHTML = `<div class="card error">Admin access required.</div>`;
     return;
   }
-  const [settings, stats] = await Promise.all([api('/admin/settings'), api('/admin/stats')]);
+  const [settings, stats, families] = await Promise.all([
+    api('/admin/settings'),
+    api('/admin/stats'),
+    api('/admin/families')
+  ]);
   app.innerHTML = `
     <div class="card">
       <h2>Admin Settings</h2>
-      <p class="muted">Only accounts with the admin role can view or change these settings.</p>
+      <p class="muted">Only accounts with the admin role can view families, listings, and exchanges.</p>
       <form id="radiusForm">
         <label>Exchange visibility radius (km)</label>
         <input name="radius_km" type="number" min="1" max="500" value="${settings.exchange_radius_km}" />
@@ -678,7 +683,32 @@ async function renderAdmin() {
         <li>Exchanges sent to delivery: ${stats.completedExchanges}</li>
       </ul>
     </div>
+    <div class="card">
+      <h3>Families</h3>
+      <input id="familySearch" placeholder="Search by name or email" />
+      <div id="familyList"></div>
+    </div>
   `;
+  const renderFamilyList = (query = '') => {
+    const q = query.trim().toLowerCase();
+    const rows = families.filter((f) =>
+      !q || `${f.name} ${f.email}`.toLowerCase().includes(q)
+    );
+    const list = document.getElementById('familyList');
+    list.innerHTML = rows.length ? rows.map((f) => `
+      <div class="admin-family-row" onclick="go('admin-family', {id:'${f.id}'})">
+        <div>
+          <strong>${escapeHtml(f.name)}</strong>
+          <span class="muted"> · ${escapeHtml(f.email)}</span>
+          ${f.role === 'admin' ? '<span class="badge fair">admin</span>' : ''}
+          <p class="muted">${escapeHtml(formatDate(f.created_at))}${f.address_text ? ` · ${escapeHtml(f.address_text)}` : ''}</p>
+        </div>
+        <p class="muted">${f.children_count} children · ${f.listings_count} listings · ${f.exchanges_count} exchanges</p>
+      </div>
+    `).join('') : '<p class="muted">No families match that search.</p>';
+  };
+  renderFamilyList();
+  document.getElementById('familySearch').oninput = (e) => renderFamilyList(e.target.value);
   document.getElementById('radiusForm').onsubmit = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -689,6 +719,58 @@ async function renderAdmin() {
       document.getElementById('msg').innerHTML = `<span class="error">${err.message}</span>`;
     }
   };
+}
+
+function adminListingRow(item) {
+  return `
+    <div class="admin-item-row">
+      ${item.photo_path ? `<img src="${item.photo_path}" alt="" />` : '<div class="admin-item-ph"></div>'}
+      <div>
+        <strong>${escapeHtml(item.title)}</strong>
+        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)</span>
+        <p class="muted">${escapeHtml(item.category || '')} · ${escapeHtml(item.status || '')} · listed ${escapeHtml(formatDate(item.created_at))}</p>
+        ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function adminExchangeRow(ex) {
+  return `
+    <div class="swap-row">
+      <p><strong>${escapeHtml(ex.offered_title)}</strong> ↔ <strong>${escapeHtml(ex.requested_title)}</strong></p>
+      <p class="muted">${escapeHtml(ex.from_child_name)} → ${escapeHtml(ex.to_child_name)} · ${escapeHtml(swapStatusLabel(ex.status))} · ${escapeHtml(ex.duration_type || '')}</p>
+      <p class="muted">${escapeHtml(formatDate(ex.created_at))}</p>
+    </div>
+  `;
+}
+
+async function renderAdminFamily(id) {
+  if (!isAdmin()) {
+    app.innerHTML = `<div class="card error">Admin access required.</div>`;
+    return;
+  }
+  if (!id) return go('admin');
+  const data = await api(`/admin/families/${id}`);
+  const { parent, children } = data;
+  app.innerHTML = `
+    <div class="card">
+      <button type="button" class="small" onclick="go('admin')">← All families</button>
+      <h2>${escapeHtml(parent.name)}</h2>
+      <p class="muted">${escapeHtml(parent.email)} · ${escapeHtml(parent.role)} · joined ${escapeHtml(formatDate(parent.created_at))}</p>
+      ${parent.address_text ? `<p class="muted">Location: ${escapeHtml(parent.address_text)}</p>` : ''}
+    </div>
+    ${children.length ? children.map((child) => `
+      <div class="card admin-child">
+        <h3>${escapeHtml(child.avatar_emoji || '🧒')} ${escapeHtml(child.display_name)}</h3>
+        <p class="muted">Child profile · ${child.birth_year ? `born ${child.birth_year} · ` : ''}added ${escapeHtml(formatDate(child.created_at))}</p>
+        <h4>Listings (${child.listings.length})</h4>
+        ${child.listings.length ? child.listings.map(adminListingRow).join('') : '<p class="muted">No toys or books listed.</p>'}
+        <h4>Exchanges (${child.exchanges.length})</h4>
+        ${child.exchanges.length ? child.exchanges.map(adminExchangeRow).join('') : '<p class="muted">No exchanges yet.</p>'}
+      </div>
+    `).join('') : '<div class="card"><p class="muted">This family has no child profiles yet.</p></div>'}
+  `;
 }
 
 // ---------- INIT ----------
