@@ -25,7 +25,7 @@ function renderNav() {
   closeMobileNav();
   nav.innerHTML = '';
   if (!getToken()) {
-    nav.innerHTML = `<button onclick="go('login')">Parent Login</button><button onclick="go('register')">Register Family</button>`;
+    nav.innerHTML = `<button onclick="go('home')">Home</button><button onclick="go('login')">Parent Login</button><button onclick="go('register')">Register Family</button>`;
     return;
   }
   const buttons = [
@@ -39,7 +39,7 @@ function renderNav() {
     `<button class="secondary" onclick="logout()">Log out</button>`;
 }
 
-function logout() { clearToken(); state.parent = null; state.children = []; go('login'); }
+function logout() { clearToken(); state.parent = null; state.children = []; go('home'); }
 
 async function loadMe() {
   if (!getToken()) return;
@@ -65,17 +65,20 @@ function childChips(onSelect) {
 
 // ---------- ROUTER ----------
 async function go(route, params = {}) {
-  if ((route === 'edit-item' || route === 'item-detail' || route === 'exchange-detail' || route === 'admin-family') && params.id) {
+  if (route === 'home' && (params.section || params.id)) {
+    window.location.hash = `home/${params.section || params.id}`;
+  } else if ((route === 'edit-item' || route === 'item-detail' || route === 'exchange-detail' || route === 'admin-family') && params.id) {
     window.location.hash = `${route}/${params.id}`;
   } else {
     window.location.hash = route;
   }
   renderNav();
   try {
+    if (route === 'home') return renderHome(params);
     if (route === 'login') return renderLogin();
     if (route === 'register') return renderRegister();
 
-    if (!getToken()) return renderLogin();
+    if (!getToken()) return renderHome();
     await loadMe();
     renderNav();
 
@@ -92,7 +95,7 @@ async function go(route, params = {}) {
       state.parent = null;
       state.children = [];
       renderNav();
-      renderLogin();
+      renderHome();
       const msg = document.getElementById('msg');
       if (msg) msg.innerHTML = `<span class="error">${err.message}</span>`;
       return;
@@ -101,10 +104,80 @@ async function go(route, params = {}) {
   }
 }
 
+function findSwapsNearMe() {
+  return getToken() ? go('browse') : go('register');
+}
+
+function renderHome(params = {}) {
+  app.innerHTML = `
+    <section class="hero">
+      <h1>Swap toys your children have outgrown with families nearby</h1>
+      <p class="lede">Find age-appropriate toys and books, propose an exchange, and keep every step supervised by parents.</p>
+      <div class="cta-row">
+        <button type="button" class="primary" onclick="findSwapsNearMe()">Find swaps near me</button>
+        <button type="button" class="ghost" onclick="go('home', {section:'safety'})">See how ToySwap keeps families safe</button>
+      </div>
+    </section>
+
+    <div class="card" id="how">
+      <h2>How a swap works</h2>
+      <div class="steps">
+        <div class="step"><strong>1. A parent creates the account</strong>Children never register alone. You add their profiles under your family.</div>
+        <div class="step"><strong>2. List what they’ve outgrown</strong>Photograph a toy or book. AI checks condition and writes a friendly listing.</div>
+        <div class="step"><strong>3. Browse nearby</strong>See what’s available within your neighborhood radius — not the whole city, and never an exact address.</div>
+        <div class="step"><strong>4. Propose, then both parents approve</strong>Nothing is scheduled until both families say yes. Then we hand the exchange to delivery.</div>
+      </div>
+    </div>
+
+    <div class="home-grid">
+      <div class="card">
+        <h2>Where ToySwap works</h2>
+        <p>Swaps are local on purpose. Families only see listings inside an admin-set radius — <strong>10 km by default</strong>.</p>
+        <p class="muted">Other families see a neighborhood or postal area and distance, never your street address. The courier is the only party who gets pickup and drop-off details after both parents approve.</p>
+      </div>
+      <div class="card">
+        <h2>What it costs</h2>
+        <p>Listing, browsing, and matching are <strong>free</strong>. Parents pay <strong>only the delivery fee</strong> when a swap is approved and sent to the courier.</p>
+        <p class="muted">There is no fee to join, and no charge if a proposal is declined.</p>
+      </div>
+    </div>
+
+    <div class="card" id="safety">
+      <h2>How ToySwap keeps families safe</h2>
+      <ul>
+        <li>Parent-only accounts. A child profile cannot exist without a parent.</li>
+        <li>Every exchange needs explicit approval from <strong>both</strong> parents before delivery is requested.</li>
+        <li>No open chat between children — only a short list of pre-approved messages, visible to both families.</li>
+        <li>Approximate location only. Families never see each other’s exact address.</li>
+        <li>Photos are for the listing. Condition is scored so families know what they are swapping.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>What happens during a swap</h2>
+      <ol>
+        <li>A child (with a parent) offers one of their listed items for another family’s item.</li>
+        <li>Both parents review the listings and approve or decline.</li>
+        <li>If both approve, ToySwap requests a delivery. Parents are charged only that delivery fee.</li>
+        <li>The courier collects and drops off. Families stay at home — no meetups required.</li>
+      </ol>
+      <div class="cta-row">
+        <button type="button" class="primary" onclick="findSwapsNearMe()">Find swaps near me</button>
+        <button type="button" class="ghost" onclick="go('login')">I already have a family account</button>
+      </div>
+    </div>
+  `;
+  const section = params.section || params.id;
+  if (section) {
+    setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' }), 50);
+  }
+}
+
 // ---------- AUTH VIEWS ----------
 function renderRegister() {
   app.innerHTML = `
     <div class="card">
+      <button type="button" class="small" onclick="go('home')">← Back to ToySwap</button>
       <h2>Register Your Family</h2>
       <p class="muted">One account per parent. You'll add your children's profiles after registering.</p>
       <form id="regForm">
@@ -133,6 +206,7 @@ function renderRegister() {
 function renderLogin() {
   app.innerHTML = `
     <div class="card">
+      <button type="button" class="small" onclick="go('home')">← Back to ToySwap</button>
       <h2>Parent Login</h2>
       <form id="loginForm">
         <input name="email" type="email" placeholder="Email" required />
@@ -785,4 +859,4 @@ renderNav();
 const hash = (location.hash || '').replace(/^#/, '');
 const [initialRoute, initialId] = hash.split('/');
 if (initialRoute) go(initialRoute, initialId ? { id: initialId } : {});
-else go(getToken() ? 'dashboard' : 'login');
+else go(getToken() ? 'dashboard' : 'home');
