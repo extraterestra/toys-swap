@@ -113,11 +113,16 @@ function findSwapsNearMe() {
 function renderHome(params = {}) {
   app.innerHTML = `
     <section class="page-hero">
-      <h1>${t('home.heroTitle')}</h1>
-      <p class="lede">${t('home.heroLede')}</p>
-      <div class="cta-row">
-        <button type="button" class="primary" onclick="findSwapsNearMe()">${t('home.ctaFind')}</button>
-        <button type="button" class="ghost" onclick="go('home', {section:'safety'})">${t('home.ctaSafe')}</button>
+      <div class="hero-visual">
+        <img src="/img/hero.jpg?v=14" alt="${t('home.heroAlt')}" width="1024" height="471" />
+      </div>
+      <div class="hero-copy">
+        <h1>${t('home.heroTitle')}</h1>
+        <p class="lede">${t('home.heroLede')}</p>
+        <div class="cta-row">
+          <button type="button" class="primary" onclick="findSwapsNearMe()">${t('home.ctaFind')}</button>
+          <button type="button" class="ghost" onclick="go('home', {section:'safety'})">${t('home.ctaSafe')}</button>
+        </div>
       </div>
     </section>
 

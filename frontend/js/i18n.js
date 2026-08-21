@@ -22,6 +22,7 @@ const I18N = {
     home: {
       heroTitle: 'Wymieniaj zabawki, z których dzieci już wyrosły, z rodzinami w okolicy',
       heroLede: 'Znajdź zabawki i książki odpowiednie do wieku, zaproponuj wymianę i niech każdy krok nadzorują rodzice.',
+      heroAlt: 'Zabawki zbierają się przy świecącej skrzyni ze skarbami',
       ctaFind: 'Znajdź wymiany w okolicy',
       ctaSafe: 'Zobacz, jak ToySwap dba o bezpieczeństwo rodzin',
       howTitle: 'Jak działa wymiana',
@@ -272,6 +273,7 @@ const I18N = {
     home: {
       heroTitle: 'Swap toys your children have outgrown with families nearby',
       heroLede: 'Find age-appropriate toys and books, propose an exchange, and keep every step supervised by parents.',
+      heroAlt: 'Toys gathered around a glowing treasure chest',
       ctaFind: 'Find swaps near me',
       ctaSafe: 'See how ToySwap keeps families safe',
       howTitle: 'How a swap works',
