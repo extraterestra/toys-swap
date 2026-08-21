@@ -21,7 +21,10 @@ async function api(path, { method = 'GET', body = null, isForm = false } = {}) {
 
   if (!res.ok) {
     if (res.status === 401) clearToken();
-    const message = (data && data.error) ? data.error : `Request failed (${res.status})`;
+    const raw = (data && data.error) ? data.error : null;
+    const message = raw
+      ? (typeof tError === 'function' ? tError(raw) : raw)
+      : (typeof t === 'function' ? t('common.requestFailed', { status: res.status }) : `Request failed (${res.status})`);
     throw new Error(message);
   }
   return data;

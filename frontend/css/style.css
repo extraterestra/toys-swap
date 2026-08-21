@@ -102,6 +102,16 @@ body {
     padding: 14px 16px;
     font-size: 1rem;
   }
+  #nav .lang-switch {
+    display: flex;
+    width: 100%;
+    border-radius: 12px;
+  }
+  #nav .lang-switch button {
+    flex: 1;
+    width: auto;
+    text-align: center;
+  }
   form { max-width: 100%; }
   .container { margin: 16px auto; padding: 0 12px 48px; }
   .grid { grid-template-columns: 1fr; gap: 12px; }
@@ -237,7 +247,56 @@ button.ghost {
 .step { background: #fffaf4; border-radius: 12px; padding: 14px; }
 .step strong { display: block; margin-bottom: 6px; color: var(--primary); }
 .home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.lang-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: #fff8f0;
+  border-radius: 12px;
+}
+.lang-label { font-weight: 700; }
+.lang-switch {
+  display: inline-flex;
+  border: 2px solid var(--secondary);
+  border-radius: 999px;
+  overflow: hidden;
+  background: white;
+}
+.lang-switch button {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  border-radius: 0;
+  padding: 8px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lang-switch button.active {
+  background: var(--secondary);
+  color: white;
+}
+#nav .lang-switch { margin-left: 4px; }
+#nav .lang-switch button {
+  width: auto;
+  background: transparent;
+  color: var(--text);
+  border-radius: 0;
+  padding: 8px 14px;
+}
+#nav .lang-switch button.active {
+  background: var(--secondary);
+  color: white;
+}
 @media (max-width: 768px) {
   .hero { padding: 24px 16px; }
   .hero h1 { font-size: 1.55rem; }
+  #nav .lang-switch { width: 100%; }
+  #nav .lang-switch button {
+    flex: 1;
+    text-align: center;
+    width: auto;
+  }
 }

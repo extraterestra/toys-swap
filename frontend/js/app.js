@@ -12,7 +12,7 @@ function closeMobileNav() {
   const btn = document.getElementById('navToggle');
   if (btn) {
     btn.setAttribute('aria-expanded', 'false');
-    btn.setAttribute('aria-label', 'Open menu');
+    btn.setAttribute('aria-label', t('nav.openMenu'));
     btn.textContent = '☰';
   }
 }
@@ -24,19 +24,20 @@ function isAdmin() {
 function renderNav() {
   closeMobileNav();
   nav.innerHTML = '';
+  const lang = languageNavHtml();
   if (!getToken()) {
-    nav.innerHTML = `<button onclick="go('home')">Home</button><button onclick="go('login')">Parent Login</button><button onclick="go('register')">Register Family</button>`;
+    nav.innerHTML = `<button onclick="go('home')">${t('nav.home')}</button><button onclick="go('login')">${t('nav.login')}</button><button onclick="go('register')">${t('nav.register')}</button>${lang}`;
     return;
   }
   const buttons = [
-    ['dashboard', 'My Family'],
-    ['add-item', 'My listings'],
-    ['browse', 'Browse Nearby'],
-    ['exchanges', 'My Exchanges']
+    ['dashboard', t('nav.dashboard')],
+    ['add-item', t('nav.listings')],
+    ['browse', t('nav.browse')],
+    ['exchanges', t('nav.exchanges')]
   ];
-  if (isAdmin()) buttons.push(['admin', 'Admin']);
+  if (isAdmin()) buttons.push(['admin', t('nav.admin')]);
   nav.innerHTML = buttons.map(([r, l]) => `<button onclick="go('${r}')">${l}</button>`).join('') +
-    `<button class="secondary" onclick="logout()">Log out</button>`;
+    `<button class="secondary" onclick="logout()">${t('nav.logout')}</button>${lang}`;
 }
 
 function logout() { clearToken(); state.parent = null; state.children = []; go('home'); }
@@ -48,7 +49,7 @@ async function loadMe() {
     clearToken();
     state.parent = null;
     state.children = [];
-    throw new Error('Account not found. Please log in again.');
+    throw new Error(t('errors.accountNotFound'));
   }
   state.parent = data.parent;
   state.children = data.children;
@@ -65,6 +66,7 @@ function childChips(onSelect) {
 
 // ---------- ROUTER ----------
 async function go(route, params = {}) {
+  applyChrome();
   if (route === 'home' && (params.section || params.id)) {
     window.location.hash = `home/${params.section || params.id}`;
   } else if ((route === 'edit-item' || route === 'item-detail' || route === 'exchange-detail' || route === 'admin-family') && params.id) {
@@ -111,59 +113,59 @@ function findSwapsNearMe() {
 function renderHome(params = {}) {
   app.innerHTML = `
     <section class="hero">
-      <h1>Swap toys your children have outgrown with families nearby</h1>
-      <p class="lede">Find age-appropriate toys and books, propose an exchange, and keep every step supervised by parents.</p>
+      <h1>${t('home.heroTitle')}</h1>
+      <p class="lede">${t('home.heroLede')}</p>
       <div class="cta-row">
-        <button type="button" class="primary" onclick="findSwapsNearMe()">Find swaps near me</button>
-        <button type="button" class="ghost" onclick="go('home', {section:'safety'})">See how ToySwap keeps families safe</button>
+        <button type="button" class="primary" onclick="findSwapsNearMe()">${t('home.ctaFind')}</button>
+        <button type="button" class="ghost" onclick="go('home', {section:'safety'})">${t('home.ctaSafe')}</button>
       </div>
     </section>
 
     <div class="card" id="how">
-      <h2>How a swap works</h2>
+      <h2>${t('home.howTitle')}</h2>
       <div class="steps">
-        <div class="step"><strong>1. A parent creates the account</strong>Children never register alone. You add their profiles under your family.</div>
-        <div class="step"><strong>2. List what they’ve outgrown</strong>Photograph a toy or book. AI checks condition and writes a friendly listing.</div>
-        <div class="step"><strong>3. Browse nearby</strong>See what’s available within your neighborhood radius — not the whole city, and never an exact address.</div>
-        <div class="step"><strong>4. Propose, then both parents approve</strong>Nothing is scheduled until both families say yes. Then we hand the exchange to delivery.</div>
+        <div class="step"><strong>${t('home.step1Title')}</strong>${t('home.step1Body')}</div>
+        <div class="step"><strong>${t('home.step2Title')}</strong>${t('home.step2Body')}</div>
+        <div class="step"><strong>${t('home.step3Title')}</strong>${t('home.step3Body')}</div>
+        <div class="step"><strong>${t('home.step4Title')}</strong>${t('home.step4Body')}</div>
       </div>
     </div>
 
     <div class="home-grid">
       <div class="card">
-        <h2>Where ToySwap works</h2>
-        <p>Swaps are local on purpose. Families only see listings inside an admin-set radius — <strong>10 km by default</strong>.</p>
-        <p class="muted">Other families see a neighborhood or postal area and distance, never your street address. The courier is the only party who gets pickup and drop-off details after both parents approve.</p>
+        <h2>${t('home.whereTitle')}</h2>
+        <p>${t('home.whereBody')}</p>
+        <p class="muted">${t('home.whereMuted')}</p>
       </div>
       <div class="card">
-        <h2>What it costs</h2>
-        <p>Listing, browsing, and matching are <strong>free</strong>. Parents pay <strong>only the delivery fee</strong> when a swap is approved and sent to the courier.</p>
-        <p class="muted">There is no fee to join, and no charge if a proposal is declined.</p>
+        <h2>${t('home.costTitle')}</h2>
+        <p>${t('home.costBody')}</p>
+        <p class="muted">${t('home.costMuted')}</p>
       </div>
     </div>
 
     <div class="card" id="safety">
-      <h2>How ToySwap keeps families safe</h2>
+      <h2>${t('home.safetyTitle')}</h2>
       <ul>
-        <li>Parent-only accounts. A child profile cannot exist without a parent.</li>
-        <li>Every exchange needs explicit approval from <strong>both</strong> parents before delivery is requested.</li>
-        <li>No open chat between children — only a short list of pre-approved messages, visible to both families.</li>
-        <li>Approximate location only. Families never see each other’s exact address.</li>
-        <li>Photos are for the listing. Condition is scored so families know what they are swapping.</li>
+        <li>${t('home.safety1')}</li>
+        <li>${t('home.safety2')}</li>
+        <li>${t('home.safety3')}</li>
+        <li>${t('home.safety4')}</li>
+        <li>${t('home.safety5')}</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>What happens during a swap</h2>
+      <h2>${t('home.duringTitle')}</h2>
       <ol>
-        <li>A child (with a parent) offers one of their listed items for another family’s item.</li>
-        <li>Both parents review the listings and approve or decline.</li>
-        <li>If both approve, ToySwap requests a delivery. Parents are charged only that delivery fee.</li>
-        <li>The courier collects and drops off. Families stay at home — no meetups required.</li>
+        <li>${t('home.during1')}</li>
+        <li>${t('home.during2')}</li>
+        <li>${t('home.during3')}</li>
+        <li>${t('home.during4')}</li>
       </ol>
       <div class="cta-row">
-        <button type="button" class="primary" onclick="findSwapsNearMe()">Find swaps near me</button>
-        <button type="button" class="ghost" onclick="go('login')">I already have a family account</button>
+        <button type="button" class="primary" onclick="findSwapsNearMe()">${t('home.ctaFind')}</button>
+        <button type="button" class="ghost" onclick="go('login')">${t('home.alreadyAccount')}</button>
       </div>
     </div>
   `;
@@ -177,15 +179,16 @@ function renderHome(params = {}) {
 function renderRegister() {
   app.innerHTML = `
     <div class="card">
-      <button type="button" class="small" onclick="go('home')">← Back to ToySwap</button>
-      <h2>Register Your Family</h2>
-      <p class="muted">One account per parent. You'll add your children's profiles after registering.</p>
+      ${languagePickerHtml()}
+      <button type="button" class="small" onclick="go('home')">${t('auth.back')}</button>
+      <h2>${t('auth.registerTitle')}</h2>
+      <p class="muted">${t('auth.registerHint')}</p>
       <form id="regForm">
-        <input name="name" placeholder="Your name" required />
-        <input name="email" type="email" placeholder="Email" required />
-        <input name="password" type="password" placeholder="Password" required />
-        <input name="address_text" placeholder="Neighborhood / postal code (approximate is fine)" />
-        <button class="primary" type="submit">Create Account</button>
+        <input name="name" placeholder="${t('auth.name')}" required />
+        <input name="email" type="email" placeholder="${t('auth.email')}" required />
+        <input name="password" type="password" placeholder="${t('auth.password')}" required />
+        <input name="address_text" placeholder="${t('auth.address')}" />
+        <button class="primary" type="submit">${t('auth.createAccount')}</button>
       </form>
       <p id="msg"></p>
     </div>
@@ -206,15 +209,16 @@ function renderRegister() {
 function renderLogin() {
   app.innerHTML = `
     <div class="card">
-      <button type="button" class="small" onclick="go('home')">← Back to ToySwap</button>
-      <h2>Parent Login</h2>
+      ${languagePickerHtml()}
+      <button type="button" class="small" onclick="go('home')">${t('auth.back')}</button>
+      <h2>${t('auth.loginTitle')}</h2>
       <form id="loginForm">
-        <input name="email" type="email" placeholder="Email" required />
-        <input name="password" type="password" placeholder="Password" required />
-        <button class="primary" type="submit">Log In</button>
+        <input name="email" type="email" placeholder="${t('auth.email')}" required />
+        <input name="password" type="password" placeholder="${t('auth.password')}" required />
+        <button class="primary" type="submit">${t('auth.logIn')}</button>
       </form>
       <p id="msg"></p>
-      <p class="muted">No account yet? <a href="#" onclick="go('register')">Register your family</a></p>
+      <p class="muted">${t('auth.noAccount')} <a href="#" onclick="go('register')">${t('auth.registerLink')}</a></p>
     </div>
   `;
   document.getElementById('loginForm').onsubmit = async (e) => {
@@ -239,20 +243,46 @@ function escapeHtml(s) {
 }
 
 function formatDate(iso) {
-  if (!iso) return 'Unknown date';
+  if (!iso) return t('common.unknownDate');
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'Unknown date';
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  if (Number.isNaN(d.getTime())) return t('common.unknownDate');
+  return d.toLocaleString(getLang() === 'en' ? 'en-GB' : 'pl-PL', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function swapStatusLabel(status) {
-  const labels = {
-    pending_parent_approval: 'Waiting for parent approval',
-    approved: 'Approved',
-    delivery_requested: 'Sent to delivery',
-    declined: 'Declined'
+  const key = `status.${status}`;
+  const label = t(key);
+  return label === key ? (status || t('status.unknown')) : label;
+}
+
+function categoryLabel(cat) {
+  if (cat === 'toy') return t('listings.toy');
+  if (cat === 'book') return t('listings.book');
+  return cat || '';
+}
+
+function itemStatusLabel(status) {
+  if (!status) return t('listings.available');
+  const key = `status.${status}`;
+  const label = t(key);
+  return label === key ? status : label;
+}
+
+function conditionLabel(label) {
+  const map = {
+    'Like new': 'condition.likeNew',
+    'Good': 'condition.good',
+    'Fair': 'condition.fair',
+    'Worn': 'condition.worn',
+    'Not exchangeable': 'condition.notExchangeable',
+    'Pending': 'listings.pending'
   };
-  return labels[status] || status || 'Unknown';
+  return map[label] ? t(map[label]) : (label || t('listings.pending'));
+}
+
+function durationLabel(d) {
+  if (d === 'forever') return t('exchanges.forever');
+  return d || '';
 }
 
 function listedItemCardHtml(item) {
@@ -262,12 +292,12 @@ function listedItemCardHtml(item) {
       <div class="body">
         <h3>${escapeHtml(item.title)}</h3>
         <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-          ${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)
+          ${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)
         </span>
-        <p class="muted">${item.owner_name ? `${escapeHtml(item.owner_name)} · ` : ''}${escapeHtml(item.category || '')} · ${escapeHtml(item.status || 'available')}</p>
-        <p class="muted">Listed ${escapeHtml(formatDate(item.created_at))}</p>
+        <p class="muted">${item.owner_name ? `${escapeHtml(item.owner_name)} · ` : ''}${escapeHtml(categoryLabel(item.category))} · ${escapeHtml(itemStatusLabel(item.status))}</p>
+        <p class="muted">${t('listings.listedOn', { date: formatDate(item.created_at) })}</p>
         <div class="item-actions">
-          <button type="button" class="small" onclick="event.stopPropagation(); go('item-detail', {id:'${item.id}'})">Open details</button>
+          <button type="button" class="small" onclick="event.stopPropagation(); go('item-detail', {id:'${item.id}'})">${t('listings.openDetails')}</button>
         </div>
       </div>
     </div>
@@ -281,14 +311,14 @@ async function fillListedItems(containerId) {
     const mine = await api('/items/mine');
     container.innerHTML = mine.length
       ? mine.map(listedItemCardHtml).join('')
-      : '<p class="muted">No toys or books listed yet. Use Add listing below to create one.</p>';
+      : `<p class="muted">${t('listings.none')}</p>`;
   } catch (err) {
     container.innerHTML = `<p class="error">${err.message}</p>`;
   }
 }
 
 async function deleteListing(id) {
-  if (!confirm('Delete this listing? This cannot be undone.')) return;
+  if (!confirm(t('listings.deleteConfirm'))) return;
   try {
     await api(`/items/${id}`, { method: 'DELETE' });
     const route = (window.location.hash || '').replace(/^#/, '').split('/')[0];
@@ -306,30 +336,30 @@ async function renderDashboard() {
   if (!state.parent) return go('login');
   app.innerHTML = `
     <div class="card">
-      <h2>Welcome, ${escapeHtml(state.parent?.name || 'there')} 👋</h2>
-      <p class="muted">Your children's profiles. Add one to get started.</p>
-      <div>${state.children.map(c => `<span class="child-chip">${c.avatar_emoji} ${escapeHtml(c.display_name)} ${c.birth_year ? `(b. ${c.birth_year})` : ''}</span>`).join('') || '<em>No children added yet.</em>'}</div>
+      <h2>${t('dash.welcome', { name: escapeHtml(state.parent?.name || t('dash.there')) })}</h2>
+      <p class="muted">${t('dash.childrenHint')}</p>
+      <div>${state.children.map(c => `<span class="child-chip">${c.avatar_emoji} ${escapeHtml(c.display_name)} ${c.birth_year ? `(b. ${c.birth_year})` : ''}</span>`).join('') || `<em>${t('dash.noChildren')}</em>`}</div>
     </div>
     <div class="card">
       <div class="card-head">
-        <h3>Your listings</h3>
-        <button type="button" class="small" onclick="go('add-item')">+ Add listing</button>
+        <h3>${t('dash.yourListings')}</h3>
+        <button type="button" class="small" onclick="go('add-item')">${t('dash.addListing')}</button>
       </div>
-      <p class="muted">Open a toy to see details, swap history, photos, and edit or delete it.</p>
+      <p class="muted">${t('dash.listingsHint')}</p>
       <div id="dashItems" class="grid"></div>
     </div>
     <div class="card">
-      <h3>Add a Child Profile</h3>
+      <h3>${t('dash.addChild')}</h3>
       <form id="childForm">
-        <input name="display_name" placeholder="Child's first name / nickname" required />
-        <input name="birth_year" type="number" placeholder="Birth year (optional)" />
+        <input name="display_name" placeholder="${t('dash.childName')}" required />
+        <input name="birth_year" type="number" placeholder="${t('dash.birthYear')}" />
         <select name="avatar_emoji">
-          <option value="🧒">🧒 Neutral</option>
-          <option value="👦">👦 Boy</option>
-          <option value="👧">👧 Girl</option>
-          <option value="🦸">🦸 Superhero</option>
+          <option value="🧒">${t('dash.avatarNeutral')}</option>
+          <option value="👦">${t('dash.avatarBoy')}</option>
+          <option value="👧">${t('dash.avatarGirl')}</option>
+          <option value="🦸">${t('dash.avatarHero')}</option>
         </select>
-        <button class="primary" type="submit">Add Child</button>
+        <button class="primary" type="submit">${t('dash.addChildBtn')}</button>
       </form>
       <p id="msg"></p>
     </div>
@@ -351,32 +381,32 @@ async function renderDashboard() {
 // ---------- ADD ITEM (with AI evaluation + 3D preview) ----------
 async function renderAddItem() {
   if (!state.children.length) {
-    app.innerHTML = `<div class="card">Add a child profile first from <a href="#" onclick="go('dashboard')">My Family</a>.</div>`;
+    app.innerHTML = `<div class="card">${t('listings.addChildFirst', { family: t('nav.dashboard') })}</div>`;
     return;
   }
   app.innerHTML = `
     <div class="card">
       <div class="card-head">
-        <h2>Your listings</h2>
-        <button type="button" class="small" onclick="document.getElementById('itemForm').scrollIntoView({behavior:'smooth'})">+ Add listing</button>
+        <h2>${t('dash.yourListings')}</h2>
+        <button type="button" class="small" onclick="document.getElementById('itemForm').scrollIntoView({behavior:'smooth'})">${t('dash.addListing')}</button>
       </div>
-      <p class="muted">Tap a listing to open its details. Add a new one with the form under the list.</p>
+      <p class="muted">${t('listings.tapHint')}</p>
       <div id="myItems" class="grid"></div>
     </div>
     <div class="card">
-      <h2>Add a toy or book</h2>
-      <p class="muted">Pick a photo from your gallery. Our AI will check its condition and write a friendly description.</p>
-      <div class="row">Listing as: ${childChips('window.__selectChild')}</div>
+      <h2>${t('listings.addToy')}</h2>
+      <p class="muted">${t('listings.addHint')}</p>
+      <div class="row">${t('listings.listingAs')} ${childChips('window.__selectChild')}</div>
       <form id="itemForm">
         <select name="category">
-          <option value="toy">Toy</option>
-          <option value="book">Book</option>
+          <option value="toy">${t('listings.toy')}</option>
+          <option value="book">${t('listings.book')}</option>
         </select>
-        <input name="title" placeholder="Title (e.g. Lego Castle)" required />
-        <textarea name="description" placeholder="Anything else to add? (optional)"></textarea>
-        <label for="photo">Photo from gallery</label>
+        <input name="title" placeholder="${t('listings.titlePh')}" required />
+        <textarea name="description" placeholder="${t('listings.descPh')}"></textarea>
+        <label for="photo">${t('listings.photoGallery')}</label>
         <input id="photo" type="file" name="photo" accept="image/*" required />
-        <button class="primary" type="submit">Analyze & List</button>
+        <button class="primary" type="submit">${t('listings.analyze')}</button>
       </form>
       <p id="msg"></p>
       <div id="result"></div>
@@ -387,12 +417,12 @@ async function renderAddItem() {
   document.getElementById('itemForm').onsubmit = async (e) => {
     e.preventDefault();
     const msg = document.getElementById('msg');
-    msg.innerHTML = `Analyzing photo with AI... 🔎`;
+    msg.innerHTML = t('listings.analyzing');
     const fd = new FormData(e.target);
     fd.append('child_id', state.activeChildId);
     try {
       const item = await api('/items', { method: 'POST', body: fd, isForm: true });
-      msg.innerHTML = `<span style="color:green">Listed! 🎉</span>`;
+      msg.innerHTML = `<span style="color:green">${t('listings.listed')}</span>`;
       renderItemResult(item);
       await fillListedItems('myItems');
     } catch (err) {
@@ -416,12 +446,12 @@ function renderItemResult(item) {
       <div class="body">
         <h3>${escapeHtml(item.title)}</h3>
         <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-          ${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)
+          ${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)
         </span>
         <p>${escapeHtml(item.ai_description || '')}</p>
         <div class="item-actions">
-          <button type="button" class="small" onclick="go('item-detail', {id:'${item.id}'})">Open details</button>
-          <button type="button" class="danger" onclick="deleteListing('${item.id}')">Delete</button>
+          <button type="button" class="small" onclick="go('item-detail', {id:'${item.id}'})">${t('listings.openDetails')}</button>
+          <button type="button" class="danger" onclick="deleteListing('${item.id}')">${t('listings.delete')}</button>
         </div>
         <div class="viewer3d" id="viewer-${item.id}"></div>
       </div>
@@ -439,59 +469,64 @@ async function renderItemDetail(id) {
     ? photos.map(p => `
         <div class="photo-tile">
           <img src="${p.photo_path}" alt="" />
-          <button type="button" class="danger" onclick="removeListingPhoto('${item.id}', '${p.id}')">Remove</button>
+          <button type="button" class="danger" onclick="removeListingPhoto('${item.id}', '${p.id}')">${t('detail.removePhoto')}</button>
         </div>
       `).join('')
-    : '<p class="muted">No photos yet.</p>';
+    : `<p class="muted">${t('detail.noPhotos')}</p>`;
   const swapRows = swaps.length
     ? swaps.map(s => `
         <div class="swap-row">
           <p><strong>${escapeHtml(s.offered_title)}</strong> ↔ <strong>${escapeHtml(s.requested_title)}</strong></p>
-          <p class="muted">${escapeHtml(s.from_child_name)} → ${escapeHtml(s.to_child_name)} · ${escapeHtml(swapStatusLabel(s.status))} · ${escapeHtml(s.duration_type || '')}</p>
+          <p class="muted">${escapeHtml(s.from_child_name)} → ${escapeHtml(s.to_child_name)} · ${escapeHtml(swapStatusLabel(s.status))} · ${escapeHtml(durationLabel(s.duration_type))}</p>
           <p class="muted">${escapeHtml(formatDate(s.created_at))}</p>
         </div>
       `).join('')
-    : '<p class="muted">No swap history yet.</p>';
+    : `<p class="muted">${t('detail.noSwaps')}</p>`;
 
   app.innerHTML = `
     <div class="card">
-      <button type="button" class="small" onclick="go('add-item')">← Back to listings</button>
+      <button type="button" class="small" onclick="go('add-item')">${t('detail.back')}</button>
       <h2>${escapeHtml(item.title)}</h2>
-      <p class="muted">Listed ${escapeHtml(formatDate(item.created_at))} · ${escapeHtml(item.owner_name || '')} · ${escapeHtml(item.category || '')} · ${escapeHtml(item.status || 'available')}</p>
+      <p class="muted">${t('detail.listedMeta', {
+        date: formatDate(item.created_at),
+        owner: item.owner_name || '',
+        category: categoryLabel(item.category),
+        status: itemStatusLabel(item.status)
+      })}</p>
       <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">
-        ${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)
+        ${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)
       </span>
       ${item.ai_description ? `<p>${escapeHtml(item.ai_description)}</p>` : ''}
     </div>
     <div class="card">
-      <h3>Photos</h3>
+      <h3>${t('detail.photos')}</h3>
       <div class="photo-grid">${photoTiles}</div>
       <form id="photoForm" class="photo-form">
-        <label for="addPhotos">Add photos from gallery</label>
+        <label for="addPhotos">${t('detail.addPhotos')}</label>
         <input id="addPhotos" type="file" name="photos" accept="image/*" multiple />
-        <button class="primary" type="submit">Add photos</button>
+        <button class="primary" type="submit">${t('detail.addPhotosBtn')}</button>
       </form>
       <p id="photoMsg"></p>
     </div>
     <div class="card">
-      <h3>Edit listing</h3>
+      <h3>${t('detail.edit')}</h3>
       <form id="editForm">
         <select name="category">
-          <option value="toy" ${item.category === 'toy' ? 'selected' : ''}>Toy</option>
-          <option value="book" ${item.category === 'book' ? 'selected' : ''}>Book</option>
+          <option value="toy" ${item.category === 'toy' ? 'selected' : ''}>${t('listings.toy')}</option>
+          <option value="book" ${item.category === 'book' ? 'selected' : ''}>${t('listings.book')}</option>
         </select>
-        <input name="title" placeholder="Title" value="${escapeHtml(item.title)}" required />
-        <textarea name="description" placeholder="Description">${escapeHtml(item.description || '')}</textarea>
-        <button class="primary" type="submit">Save description</button>
+        <input name="title" placeholder="${t('detail.title')}" value="${escapeHtml(item.title)}" required />
+        <textarea name="description" placeholder="${t('detail.description')}">${escapeHtml(item.description || '')}</textarea>
+        <button class="primary" type="submit">${t('detail.save')}</button>
       </form>
       <p id="msg"></p>
     </div>
     <div class="card">
-      <h3>Swap history</h3>
+      <h3>${t('detail.swapHistory')}</h3>
       ${swapRows}
     </div>
     <div class="card">
-      <button type="button" class="danger" onclick="deleteListing('${item.id}')">Delete listing</button>
+      <button type="button" class="danger" onclick="deleteListing('${item.id}')">${t('detail.deleteListing')}</button>
     </div>
   `;
 
@@ -499,7 +534,7 @@ async function renderItemDetail(id) {
     e.preventDefault();
     const msg = document.getElementById('msg');
     const f = new FormData(e.target);
-    msg.innerHTML = 'Saving...';
+    msg.innerHTML = t('detail.saving');
     try {
       await api(`/items/${item.id}`, {
         method: 'PUT',
@@ -509,7 +544,7 @@ async function renderItemDetail(id) {
           category: f.get('category')
         }
       });
-      msg.innerHTML = `<span style="color:green">Saved!</span>`;
+      msg.innerHTML = `<span style="color:green">${t('detail.saved')}</span>`;
       await renderItemDetail(item.id);
     } catch (err) {
       msg.innerHTML = `<span class="error">${err.message}</span>`;
@@ -521,10 +556,10 @@ async function renderItemDetail(id) {
     const msg = document.getElementById('photoMsg');
     const input = document.getElementById('addPhotos');
     if (!input.files.length) {
-      msg.innerHTML = `<span class="error">Choose at least one photo</span>`;
+      msg.innerHTML = `<span class="error">${t('detail.choosePhoto')}</span>`;
       return;
     }
-    msg.innerHTML = 'Uploading...';
+    msg.innerHTML = t('detail.uploading');
     try {
       await api(`/items/${item.id}/photos`, { method: 'POST', body: new FormData(e.target), isForm: true });
       await renderItemDetail(item.id);
@@ -535,7 +570,7 @@ async function renderItemDetail(id) {
 }
 
 async function removeListingPhoto(itemId, photoId) {
-  if (!confirm('Remove this photo?')) return;
+  if (!confirm(t('detail.removePhotoConfirm'))) return;
   try {
     await api(`/items/${itemId}/photos/${photoId}`, { method: 'DELETE' });
     await renderItemDetail(itemId);
@@ -591,13 +626,13 @@ function render3DPreview(containerId, photoUrl) {
 // ---------- BROWSE NEARBY ----------
 async function renderBrowse() {
   if (!state.children.length) {
-    app.innerHTML = `<div class="card">Add a child profile first from <a href="#" onclick="go('dashboard')">My Family</a>.</div>`;
+    app.innerHTML = `<div class="card">${t('listings.addChildFirst', { family: t('nav.dashboard') })}</div>`;
     return;
   }
   app.innerHTML = `
     <div class="card">
-      <h2>Browse Nearby Toys & Books</h2>
-      <div class="row">Browsing as: ${childChips('window.__selectChildBrowse')}</div>
+      <h2>${t('browse.title')}</h2>
+      <div class="row">${t('browse.browsingAs')} ${childChips('window.__selectChildBrowse')}</div>
       <div id="items" class="grid" style="margin-top:16px;"></div>
     </div>
   `;
@@ -608,18 +643,18 @@ async function renderBrowse() {
 async function loadNearby() {
   const data = await api(`/items/nearby?child_id=${state.activeChildId}`);
   const container = document.getElementById('items');
-  container.innerHTML = `<p class="muted">Showing items within ${data.radius_km} km (set by admin).</p>` +
-    (data.items.length ? '' : '<p>No items nearby yet — check back soon!</p>') +
+  container.innerHTML = `<p class="muted">${t('browse.within', { km: data.radius_km })}</p>` +
+    (data.items.length ? '' : `<p>${t('browse.none')}</p>`) +
     data.items.map(item => `
       <div class="item-card">
         ${item.photo_path ? `<img src="${item.photo_path}" />` : ''}
         <div class="body">
           <h3>${item.title}</h3>
-          <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${item.ai_condition_label} (${item.ai_condition_score}/10)</span>
+          <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score}/10)</span>
           <p>${item.ai_description || ''}</p>
-          <p class="muted">By ${item.owner_avatar} ${item.owner_name}</p>
-          <p class="distance">📍 ${item.distance_km} km away</p>
-          <button class="small" onclick="proposeExchange('${item.id}')">Propose Exchange</button>
+          <p class="muted">${t('browse.by', { avatar: item.owner_avatar || '', name: item.owner_name || '' })}</p>
+          <p class="distance">${t('browse.away', { km: item.distance_km })}</p>
+          <button class="small" onclick="proposeExchange('${item.id}')">${t('browse.propose')}</button>
         </div>
       </div>
     `).join('');
@@ -630,10 +665,10 @@ async function proposeExchange(requestedItemId) {
     const mine = await api('/items/mine');
     const myOwn = mine.filter(i => i.child_id === state.activeChildId && i.status === 'available');
     if (!myOwn.length) {
-      alert('List one of your own toys/books first so you have something to offer!');
+      alert(t('browse.needOwn'));
       return go('add-item');
     }
-    const choice = prompt(`Which of your items to offer?\n${myOwn.map((i, idx) => `${idx + 1}. ${i.title}`).join('\n')}\n\nEnter number:`);
+    const choice = prompt(t('browse.whichOffer', { list: myOwn.map((i, idx) => `${idx + 1}. ${i.title}`).join('\n') }));
     const idx = parseInt(choice, 10) - 1;
     if (isNaN(idx) || !myOwn[idx]) return;
 
@@ -645,7 +680,7 @@ async function proposeExchange(requestedItemId) {
         from_child_id: state.activeChildId
       }
     });
-    alert('Exchange proposed! Both parents need to approve it under "My Exchanges".');
+    alert(t('browse.proposed'));
     go('exchanges');
   } catch (err) {
     alert(err.message);
@@ -657,8 +692,8 @@ async function renderExchanges() {
   const list = await api('/exchanges');
   app.innerHTML = `
     <div class="card">
-      <h2>My Exchanges</h2>
-      ${list.length ? '' : '<p class="muted">No exchange requests yet.</p>'}
+      <h2>${t('exchanges.title')}</h2>
+      ${list.length ? '' : `<p class="muted">${t('exchanges.none')}</p>`}
       ${list.map(ex => `
         <div class="card" style="background:#f8f8fb;">
           <div class="row">
@@ -667,10 +702,10 @@ async function renderExchanges() {
             ${ex.requested_photo ? `<img src="${ex.requested_photo}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">` : ''}
             <strong>${ex.requested_title}</strong>
           </div>
-          <p class="muted">${ex.from_child_name} ↔ ${ex.to_child_name} · Status: <strong>${ex.status}</strong> · ${ex.duration_type}</p>
+          <p class="muted">${ex.from_child_name} ↔ ${ex.to_child_name} · ${t('exchanges.status')}: <strong>${swapStatusLabel(ex.status)}</strong> · ${durationLabel(ex.duration_type)}</p>
           <div class="row">
-            ${ex.status === 'pending_parent_approval' ? `<button class="small" onclick="approveExchange('${ex.id}')">Approve</button><button class="small" style="background:#f44336" onclick="declineExchange('${ex.id}')">Decline</button>` : ''}
-            <button class="small" onclick="go('exchange-detail', {id:'${ex.id}'})">Open Chat</button>
+            ${ex.status === 'pending_parent_approval' ? `<button class="small" onclick="approveExchange('${ex.id}')">${t('exchanges.approve')}</button><button class="small" style="background:#f44336" onclick="declineExchange('${ex.id}')">${t('exchanges.decline')}</button>` : ''}
+            <button class="small" onclick="go('exchange-detail', {id:'${ex.id}'})">${t('exchanges.openChat')}</button>
           </div>
         </div>
       `).join('')}
@@ -682,7 +717,7 @@ async function approveExchange(id) {
   try {
     const result = await api(`/exchanges/${id}/approve`, { method: 'POST' });
     if (result.status === 'delivery_requested') {
-      alert('Both parents approved! A delivery order has been sent to the delivery app. Parents will be charged only the delivery fee.');
+      alert(t('exchanges.bothApproved'));
     }
     renderExchanges();
   } catch (err) { alert(err.message); }
@@ -699,16 +734,16 @@ async function renderExchangeDetail(id) {
   ]);
   app.innerHTML = `
     <div class="card">
-      <button class="small" onclick="go('exchanges')">← Back</button>
-      <h2>Chat (safe, pre-approved messages only)</h2>
+      <button class="small" onclick="go('exchanges')">${t('exchanges.back')}</button>
+      <h2>${t('exchanges.chatTitle')}</h2>
       <div id="chatLog">${messages.map(m => `
         <div class="msg-bubble ${m.sender_child_id === state.activeChildId ? 'mine' : ''}">
-          ${m.avatar_emoji} <strong>${m.sender_name}:</strong> ${m.text}
+          ${m.avatar_emoji} <strong>${m.sender_name}:</strong> ${escapeHtml(tCanned(m.text))}
         </div>
-      `).join('') || '<p class="muted">No messages yet.</p>'}</div>
-      <div class="row" style="margin-top:16px;">Send as: ${childChips('window.__selectChildChat')}</div>
+      `).join('') || `<p class="muted">${t('exchanges.noMessages')}</p>`}</div>
+      <div class="row" style="margin-top:16px;">${t('exchanges.sendAs')} ${childChips('window.__selectChildChat')}</div>
       <div class="row" style="margin-top:8px; flex-wrap:wrap;">
-        ${canned.map(c => `<button class="small" onclick="sendCanned('${id}', ${c.id})">${c.text}</button>`).join('')}
+        ${canned.map(c => `<button class="small" onclick="sendCanned('${id}', ${c.id})">${escapeHtml(tCanned(c.text))}</button>`).join('')}
       </div>
     </div>
   `;
@@ -728,7 +763,7 @@ async function sendCanned(exchangeId, cannedId) {
 // ---------- ADMIN ----------
 async function renderAdmin() {
   if (!isAdmin()) {
-    app.innerHTML = `<div class="card error">Admin access required.</div>`;
+    app.innerHTML = `<div class="card error">${t('admin.required')}</div>`;
     return;
   }
   const [settings, stats, families] = await Promise.all([
@@ -738,28 +773,28 @@ async function renderAdmin() {
   ]);
   app.innerHTML = `
     <div class="card">
-      <h2>Admin Settings</h2>
-      <p class="muted">Only accounts with the admin role can view families, listings, and exchanges.</p>
+      <h2>${t('admin.settings')}</h2>
+      <p class="muted">${t('admin.settingsHint')}</p>
       <form id="radiusForm">
-        <label>Exchange visibility radius (km)</label>
+        <label>${t('admin.radius')}</label>
         <input name="radius_km" type="number" min="1" max="500" value="${settings.exchange_radius_km}" />
-        <button class="primary" type="submit">Update Radius</button>
+        <button class="primary" type="submit">${t('admin.updateRadius')}</button>
       </form>
       <p id="msg"></p>
     </div>
     <div class="card">
-      <h3>Platform Stats</h3>
+      <h3>${t('admin.stats')}</h3>
       <ul>
-        <li>Parents: ${stats.parents}</li>
-        <li>Children: ${stats.children}</li>
-        <li>Items listed: ${stats.items}</li>
-        <li>Exchange requests: ${stats.exchanges}</li>
-        <li>Exchanges sent to delivery: ${stats.completedExchanges}</li>
+        <li>${t('admin.parents')}: ${stats.parents}</li>
+        <li>${t('admin.children')}: ${stats.children}</li>
+        <li>${t('admin.items')}: ${stats.items}</li>
+        <li>${t('admin.exchanges')}: ${stats.exchanges}</li>
+        <li>${t('admin.delivered')}: ${stats.completedExchanges}</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Families</h3>
-      <input id="familySearch" placeholder="Search by name or email" />
+      <h3>${t('admin.families')}</h3>
+      <input id="familySearch" placeholder="${t('admin.search')}" />
       <div id="familyList"></div>
     </div>
   `;
@@ -777,9 +812,9 @@ async function renderAdmin() {
           ${f.role === 'admin' ? '<span class="badge fair">admin</span>' : ''}
           <p class="muted">${escapeHtml(formatDate(f.created_at))}${f.address_text ? ` · ${escapeHtml(f.address_text)}` : ''}</p>
         </div>
-        <p class="muted">${f.children_count} children · ${f.listings_count} listings · ${f.exchanges_count} exchanges</p>
+        <p class="muted">${t('admin.childrenN', { n: f.children_count })} · ${t('admin.listingsN', { n: f.listings_count })} · ${t('admin.exchangesN', { n: f.exchanges_count })}</p>
       </div>
-    `).join('') : '<p class="muted">No families match that search.</p>';
+    `).join('') : `<p class="muted">${t('admin.noMatch')}</p>`;
   };
   renderFamilyList();
   document.getElementById('familySearch').oninput = (e) => renderFamilyList(e.target.value);
@@ -788,7 +823,7 @@ async function renderAdmin() {
     const f = new FormData(e.target);
     try {
       await api('/admin/settings/exchange-radius', { method: 'POST', body: Object.fromEntries(f) });
-      document.getElementById('msg').innerHTML = `<span style="color:green">Updated!</span>`;
+      document.getElementById('msg').innerHTML = `<span style="color:green">${t('admin.updated')}</span>`;
     } catch (err) {
       document.getElementById('msg').innerHTML = `<span class="error">${err.message}</span>`;
     }
@@ -801,8 +836,8 @@ function adminListingRow(item) {
       ${item.photo_path ? `<img src="${item.photo_path}" alt="" />` : '<div class="admin-item-ph"></div>'}
       <div>
         <strong>${escapeHtml(item.title)}</strong>
-        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(item.ai_condition_label || 'Pending')} (${item.ai_condition_score ?? '?'}/10)</span>
-        <p class="muted">${escapeHtml(item.category || '')} · ${escapeHtml(item.status || '')} · listed ${escapeHtml(formatDate(item.created_at))}</p>
+        <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score ?? '?'}/10)</span>
+        <p class="muted">${escapeHtml(categoryLabel(item.category))} · ${escapeHtml(itemStatusLabel(item.status))} · ${t('admin.listed', { date: formatDate(item.created_at) })}</p>
         ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
       </div>
     </div>
@@ -813,7 +848,7 @@ function adminExchangeRow(ex) {
   return `
     <div class="swap-row">
       <p><strong>${escapeHtml(ex.offered_title)}</strong> ↔ <strong>${escapeHtml(ex.requested_title)}</strong></p>
-      <p class="muted">${escapeHtml(ex.from_child_name)} → ${escapeHtml(ex.to_child_name)} · ${escapeHtml(swapStatusLabel(ex.status))} · ${escapeHtml(ex.duration_type || '')}</p>
+      <p class="muted">${escapeHtml(ex.from_child_name)} → ${escapeHtml(ex.to_child_name)} · ${escapeHtml(swapStatusLabel(ex.status))} · ${escapeHtml(durationLabel(ex.duration_type))}</p>
       <p class="muted">${escapeHtml(formatDate(ex.created_at))}</p>
     </div>
   `;
@@ -821,7 +856,7 @@ function adminExchangeRow(ex) {
 
 async function renderAdminFamily(id) {
   if (!isAdmin()) {
-    app.innerHTML = `<div class="card error">Admin access required.</div>`;
+    app.innerHTML = `<div class="card error">${t('admin.required')}</div>`;
     return;
   }
   if (!id) return go('admin');
@@ -829,21 +864,21 @@ async function renderAdminFamily(id) {
   const { parent, children } = data;
   app.innerHTML = `
     <div class="card">
-      <button type="button" class="small" onclick="go('admin')">← All families</button>
+      <button type="button" class="small" onclick="go('admin')">${t('admin.allFamilies')}</button>
       <h2>${escapeHtml(parent.name)}</h2>
-      <p class="muted">${escapeHtml(parent.email)} · ${escapeHtml(parent.role)} · joined ${escapeHtml(formatDate(parent.created_at))}</p>
-      ${parent.address_text ? `<p class="muted">Location: ${escapeHtml(parent.address_text)}</p>` : ''}
+      <p class="muted">${escapeHtml(parent.email)} · ${escapeHtml(parent.role)} · ${t('admin.joined', { date: formatDate(parent.created_at) })}</p>
+      ${parent.address_text ? `<p class="muted">${t('admin.location', { addr: escapeHtml(parent.address_text) })}</p>` : ''}
     </div>
     ${children.length ? children.map((child) => `
       <div class="card admin-child">
         <h3>${escapeHtml(child.avatar_emoji || '🧒')} ${escapeHtml(child.display_name)}</h3>
-        <p class="muted">Child profile · ${child.birth_year ? `born ${child.birth_year} · ` : ''}added ${escapeHtml(formatDate(child.created_at))}</p>
-        <h4>Listings (${child.listings.length})</h4>
-        ${child.listings.length ? child.listings.map(adminListingRow).join('') : '<p class="muted">No toys or books listed.</p>'}
-        <h4>Exchanges (${child.exchanges.length})</h4>
-        ${child.exchanges.length ? child.exchanges.map(adminExchangeRow).join('') : '<p class="muted">No exchanges yet.</p>'}
+        <p class="muted">${t('admin.childProfile')} · ${child.birth_year ? `${t('admin.born', { year: child.birth_year })} · ` : ''}${t('admin.added', { date: formatDate(child.created_at) })}</p>
+        <h4>${t('admin.listings', { n: child.listings.length })}</h4>
+        ${child.listings.length ? child.listings.map(adminListingRow).join('') : `<p class="muted">${t('admin.noListings')}</p>`}
+        <h4>${t('admin.exchangesTitle', { n: child.exchanges.length })}</h4>
+        ${child.exchanges.length ? child.exchanges.map(adminExchangeRow).join('') : `<p class="muted">${t('admin.noExchanges')}</p>`}
       </div>
-    `).join('') : '<div class="card"><p class="muted">This family has no child profiles yet.</p></div>'}
+    `).join('') : `<div class="card"><p class="muted">${t('admin.noChildProfiles')}</p></div>`}
   `;
 }
 
@@ -852,7 +887,7 @@ document.getElementById('navToggle')?.addEventListener('click', () => {
   const open = document.body.classList.toggle('nav-open');
   const btn = document.getElementById('navToggle');
   btn.setAttribute('aria-expanded', String(open));
-  btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  btn.setAttribute('aria-label', open ? t('nav.closeMenu') : t('nav.openMenu'));
   btn.textContent = open ? '✕' : '☰';
 });
 renderNav();
