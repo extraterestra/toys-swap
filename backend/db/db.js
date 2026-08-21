@@ -1,6 +1,9 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
+const { configuredAdminEmails } = require('../services/adminEmails');
 
 function sslConfig() {
   const url = process.env.DATABASE_URL || '';
@@ -74,6 +77,41 @@ async function seed() {
       `INSERT INTO canned_messages (text) VALUES ($1) ON CONFLICT (text) DO NOTHING`,
       [text]
     );
+  }
+
+  const adminEmails = configuredAdminEmails();
+  if (!adminEmails.length) {
+    console.log('ℹ ADMIN_EMAILS is not set — the admin console is locked until a parent is granted role=admin');
+    return;
+  }
+
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminPassword) {
+    const email = adminEmails[0];
+    const password_hash = bcrypt.hashSync(adminPassword, 10);
+    const existing = await one('SELECT id FROM parents WHERE lower(email) = $1', [email]);
+    if (existing) {
+      await query(
+        `UPDATE parents SET password_hash = $1, role = 'admin' WHERE id = $2`,
+        [password_hash, existing.id]
+      );
+      console.log(`✔ Admin password updated for ${email}`);
+    } else {
+      await query(
+        `INSERT INTO parents (id, name, email, password_hash, role)
+         VALUES ($1, $2, $3, $4, 'admin')`,
+        [uuidv4(), 'Admin', email, password_hash]
+      );
+      console.log(`✔ Admin account created for ${email}`);
+    }
+  }
+
+  for (const email of adminEmails) {
+    const updated = await query(
+      `UPDATE parents SET role = 'admin' WHERE lower(email) = $1 AND role IS DISTINCT FROM 'admin'`,
+      [email]
+    );
+    if (updated.rowCount) console.log(`✔ Granted admin role to ${email}`);
   }
 }
 

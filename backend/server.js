@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { initDb, pool } = require('./db/db');
+const { requireParentAuth, requireAdmin } = require('./services/auth');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -24,7 +25,7 @@ app.use('/api/parents', require('./routes/parents'));
 app.use('/api/children', require('./routes/children'));
 app.use('/api/items', require('./routes/items'));
 app.use('/api/exchanges', require('./routes/exchanges'));
-app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin', requireParentAuth, requireAdmin, require('./routes/admin'));
 
 app.get('/api/health', async (req, res) => {
   try {

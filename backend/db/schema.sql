@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS parents (
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'parent',
   address_text TEXT,
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
@@ -85,6 +86,8 @@ CREATE INDEX IF NOT EXISTS items_child_id_idx ON items (child_id);
 CREATE INDEX IF NOT EXISTS items_status_idx ON items (status);
 CREATE INDEX IF NOT EXISTS exchange_from_child_idx ON exchange_requests (from_child_id);
 CREATE INDEX IF NOT EXISTS exchange_to_child_idx ON exchange_requests (to_child_id);
+
+ALTER TABLE parents ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'parent';
 
 CREATE TABLE IF NOT EXISTS item_photos (
   id TEXT PRIMARY KEY,

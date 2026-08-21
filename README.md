@@ -91,6 +91,8 @@ Set these in a **repo-root** `.env` (Compose interpolates `${VAR}`). `backend/.e
 | Variable | Required | Default / notes |
 |---|---|---|
 | `JWT_SECRET` | Yes in anything shared | Compose default is a placeholder — change it |
+| `ADMIN_EMAILS` | To use Admin | Comma-separated parent emails granted `role=admin` (default `admin@admin.com`) |
+| `ADMIN_PASSWORD` | With Admin | Sets/creates the password for the first admin email on startup |
 | `ANTHROPIC_API_KEY` | No | Empty → mock AI evaluator |
 | `DELIVERY_API_URL` | No | `https://delivery-rabka.up.railway.app/` |
 | `DEFAULT_EXCHANGE_RADIUS_KM` | No | `10` |
@@ -140,6 +142,7 @@ In the web service **Variables** tab, set:
 |---|---|
 | `DATABASE_URL` | Variable reference: `${{Postgres.DATABASE_URL}}` (use your Postgres service name if it is not `Postgres`) |
 | `JWT_SECRET` | Long random string (required) |
+| `ADMIN_EMAILS` | Comma-separated parent emails to grant the admin role (required to use `/admin`) |
 | `DATABASE_SSL` | Leave unset. Hosted Railway Postgres needs SSL; the app enables SSL automatically when `DATABASE_URL` is not localhost. |
 | `ANTHROPIC_API_KEY` | Optional. Empty → mock AI. |
 | `DELIVERY_API_URL` | Optional. Defaults to `https://delivery-rabka.up.railway.app/` |
@@ -169,7 +172,7 @@ Schema is applied automatically on boot (`✔ Postgres schema ready` in deploy l
 ### Railway notes
 
 - One replica is assumed. Uploads live on a single volume; do not scale replicas until photos are on object storage.
-- `/admin` is **unauthenticated** in this MVP — do not share the public URL widely until admin is gated.
+- `/admin` requires a parent account with `role=admin`. Local Docker creates `admin@admin.com` on startup. Ordinary users never see Admin in the menu; `/api/admin/*` returns 403.
 - Phase 2 can add Redis + a worker in the same Railway project without changing this API’s shape.
 
 ---
@@ -189,7 +192,7 @@ Schema is applied automatically on boot (`✔ Postgres schema ready` in deploy l
 - AI condition scoring (1–10), a friendly generated description, and an exchangeable/not-exchangeable flag
   - Real assessment via Claude's vision API when `ANTHROPIC_API_KEY` is set; deterministic mock fallback otherwise
 - MVP "3D preview": a rotating Three.js card textured with the uploaded photo (stand-in for full 3D reconstruction — see roadmap)
-- Nearby browsing filtered to an **admin-configurable radius** (default 10 km, live-editable from `/admin`, distance computed via Haversine formula)
+- Nearby browsing filtered to an **admin-configurable radius** (default 10 km, live-editable from Admin by `role=admin` accounts, distance computed via Haversine formula)
 - Propose → dual-parent-approve → auto-triggered delivery request workflow
 - Delivery adapter that POSTs the order to `https://delivery-rabka.up.railway.app/` once both parents approve (isolated in one file — update the payload shape once you have their real API contract)
 - Admin page: live radius control + basic platform stats (parents/children/items/exchanges)
@@ -207,7 +210,7 @@ Schema is applied automatically on boot (`✔ Postgres schema ready` in deploy l
 | Real 3D asset generation | Mocked with a Three.js rotating card | Needs a paid 3D-from-photo API (e.g. Meshy/Kaedim) — architecture already isolates this behind one function so it's a clean swap |
 | Games | Not built | Separate product surface, planned Phase 3 |
 | Multi-category exchange (clothes, shoes, etc.) | Schema supports it (`category` field is free text) but UI is toy/book only | Keeping MVP scope tight; extending the category list + UI filters is low-effort later |
-| Real admin auth | Not built — `/admin` is unauthenticated | MVP-only shortcut, flagged clearly in code comments — must be gated before any public deploy |
+| Real admin auth | Delivered | JWT parent auth + `parents.role`; `/api/admin/*` requires `role=admin`; Admin nav hidden from ordinary users |
 | PostGIS | Not enabled yet | Haversine in JS is enough at MVP scale; enable PostGIS on the same Postgres when radius queries need indexes |
 | S3/R2 object storage | Not built — disk + Docker/Railway volume | Fine for a single instance; swap when you add a second replica or a 3D-generation worker |
 

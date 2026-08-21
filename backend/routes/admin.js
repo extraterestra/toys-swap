@@ -4,10 +4,6 @@ const asyncHandler = require('../services/asyncHandler');
 
 const router = express.Router();
 
-// NOTE: MVP-only simplification - there is no separate admin role/auth yet.
-// Before production, gate this behind a real admin account + auth, not just
-// "anyone with the URL".
-
 router.get('/settings', asyncHandler(async (req, res) => {
   const rows = await many('SELECT * FROM admin_settings');
   const settings = {};

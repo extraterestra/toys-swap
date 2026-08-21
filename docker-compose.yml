@@ -28,6 +28,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       DELIVERY_API_URL: ${DELIVERY_API_URL:-https://delivery-rabka.up.railway.app/}
       DEFAULT_EXCHANGE_RADIUS_KM: ${DEFAULT_EXCHANGE_RADIUS_KM:-10}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@admin.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin0617}
       UPLOADS_DIR: /app/backend/uploads
     volumes:
       - uploads:/app/backend/uploads

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { one } = require('../db/db');
 
 function signParentToken(parent) {
   return jwt.sign({ parentId: parent.id, email: parent.email }, process.env.JWT_SECRET, {
@@ -20,4 +21,20 @@ function requireParentAuth(req, res, next) {
   }
 }
 
-module.exports = { signParentToken, requireParentAuth };
+async function requireAdmin(req, res, next) {
+  try {
+    if (!req.parentId) return res.status(401).json({ error: 'Missing auth token' });
+    const parent = await one('SELECT id, role FROM parents WHERE id = $1', [req.parentId]);
+    if (!parent) return res.status(401).json({ error: 'Account not found. Please log in again.' });
+    if (parent.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    req.parentRole = 'admin';
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { signParentToken, requireParentAuth, requireAdmin };
+

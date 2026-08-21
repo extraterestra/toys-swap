@@ -17,6 +17,10 @@ function closeMobileNav() {
   }
 }
 
+function isAdmin() {
+  return state.parent && state.parent.role === 'admin';
+}
+
 function renderNav() {
   closeMobileNav();
   nav.innerHTML = '';
@@ -28,9 +32,9 @@ function renderNav() {
     ['dashboard', 'My Family'],
     ['add-item', 'My listings'],
     ['browse', 'Browse Nearby'],
-    ['exchanges', 'My Exchanges'],
-    ['admin', 'Admin']
+    ['exchanges', 'My Exchanges']
   ];
+  if (isAdmin()) buttons.push(['admin', 'Admin']);
   nav.innerHTML = buttons.map(([r, l]) => `<button onclick="go('${r}')">${l}</button>`).join('') +
     `<button class="secondary" onclick="logout()">Log out</button>`;
 }
@@ -73,6 +77,7 @@ async function go(route, params = {}) {
 
     if (!getToken()) return renderLogin();
     await loadMe();
+    renderNav();
 
     if (route === 'dashboard') return await renderDashboard();
     if (route === 'add-item') return await renderAddItem();
@@ -647,11 +652,15 @@ async function sendCanned(exchangeId, cannedId) {
 
 // ---------- ADMIN ----------
 async function renderAdmin() {
+  if (!isAdmin()) {
+    app.innerHTML = `<div class="card error">Admin access required.</div>`;
+    return;
+  }
   const [settings, stats] = await Promise.all([api('/admin/settings'), api('/admin/stats')]);
   app.innerHTML = `
     <div class="card">
       <h2>Admin Settings</h2>
-      <p class="muted">MVP note: this page has no separate admin auth yet — restrict access before deploying publicly.</p>
+      <p class="muted">Only accounts with the admin role can view or change these settings.</p>
       <form id="radiusForm">
         <label>Exchange visibility radius (km)</label>
         <input name="radius_km" type="number" min="1" max="500" value="${settings.exchange_radius_km}" />
