@@ -89,6 +89,37 @@ CREATE INDEX IF NOT EXISTS exchange_to_child_idx ON exchange_requests (to_child_
 
 ALTER TABLE parents ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'parent';
 
+ALTER TABLE children ADD COLUMN IF NOT EXISTS age_band TEXT;
+
+CREATE TABLE IF NOT EXISTS guardian_consents (
+  id TEXT PRIMARY KEY,
+  parent_id TEXT REFERENCES parents(id) ON DELETE SET NULL,
+  child_id TEXT REFERENCES children(id) ON DELETE SET NULL,
+  parent_email_hash TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  policy_version TEXT NOT NULL,
+  locale TEXT NOT NULL DEFAULT 'pl',
+  confirmation_text TEXT,
+  confirmed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS guardian_consents_parent_idx ON guardian_consents (parent_id);
+CREATE INDEX IF NOT EXISTS guardian_consents_child_idx ON guardian_consents (child_id);
+
+-- Minimize existing child records: keep an age range, drop exact birth year.
+UPDATE children
+SET age_band = CASE
+  WHEN age_band IS NOT NULL THEN age_band
+  WHEN birth_year IS NULL THEN NULL
+  WHEN (EXTRACT(YEAR FROM NOW())::int - birth_year) <= 2 THEN '0-2'
+  WHEN (EXTRACT(YEAR FROM NOW())::int - birth_year) <= 5 THEN '3-5'
+  WHEN (EXTRACT(YEAR FROM NOW())::int - birth_year) <= 8 THEN '6-8'
+  WHEN (EXTRACT(YEAR FROM NOW())::int - birth_year) <= 12 THEN '9-12'
+  ELSE '13-17'
+END
+WHERE age_band IS NULL AND birth_year IS NOT NULL;
+
+UPDATE children SET birth_year = NULL WHERE birth_year IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS item_photos (
   id TEXT PRIMARY KEY,
   item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
@@ -96,3 +127,24 @@ CREATE TABLE IF NOT EXISTS item_photos (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS item_photos_item_id_idx ON item_photos (item_id);
+
+CREATE TABLE IF NOT EXISTS safety_reports (
+  id TEXT PRIMARY KEY,
+  reporter_parent_id TEXT REFERENCES parents(id) ON DELETE SET NULL,
+  subject_type TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  reported_parent_id TEXT REFERENCES parents(id) ON DELETE SET NULL,
+  reason TEXT NOT NULL,
+  details TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS safety_reports_status_idx ON safety_reports (status, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS parent_blocks (
+  blocker_id TEXT NOT NULL REFERENCES parents(id) ON DELETE CASCADE,
+  blocked_id TEXT NOT NULL REFERENCES parents(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (blocker_id, blocked_id),
+  CHECK (blocker_id <> blocked_id)
+);

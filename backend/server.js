@@ -25,6 +25,7 @@ app.use('/api/parents', require('./routes/parents'));
 app.use('/api/children', require('./routes/children'));
 app.use('/api/items', require('./routes/items'));
 app.use('/api/exchanges', require('./routes/exchanges'));
+app.use('/api/safety', require('./routes/safety'));
 app.use('/api/admin', requireParentAuth, requireAdmin, require('./routes/admin'));
 
 app.get('/api/health', async (req, res) => {

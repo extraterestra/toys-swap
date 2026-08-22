@@ -86,7 +86,7 @@ function mockEvaluate({ category, title }) {
   return {
     score,
     label: labels[score] || 'Good',
-    description: `A ${category} called "${title}" that looks well cared for and ready to bring joy to another child. (Mock AI result — set ANTHROPIC_API_KEY for real assessment.)`,
+    description: `A ${category} called "${title}" in usable condition. Condition is a pilot estimate, not a professional appraisal.`,
     exchangeable: true
   };
 }

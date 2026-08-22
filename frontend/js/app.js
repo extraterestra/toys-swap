@@ -26,14 +26,16 @@ function renderNav() {
   nav.innerHTML = '';
   const lang = languageNavHtml();
   if (!getToken()) {
-    nav.innerHTML = `<button onclick="go('home')">${t('nav.home')}</button><button onclick="go('login')">${t('nav.login')}</button><button class="nav-cta" onclick="go('register')">${t('nav.register')}</button>${lang}`;
+    nav.innerHTML = `<button onclick="go('home')">${t('nav.home')}</button><button onclick="go('costs')">${t('nav.costs')}</button><button onclick="go('privacy')">${t('nav.privacy')}</button><button onclick="go('login')">${t('nav.login')}</button><button class="nav-cta" onclick="go('register')">${t('nav.register')}</button>${lang}`;
     return;
   }
   const buttons = [
     ['dashboard', t('nav.dashboard')],
     ['add-item', t('nav.listings')],
     ['browse', t('nav.browse')],
-    ['exchanges', t('nav.exchanges')]
+    ['exchanges', t('nav.exchanges')],
+    ['costs', t('nav.costs')],
+    ['privacy', t('nav.privacy')]
   ];
   if (isAdmin()) buttons.push(['admin', t('nav.admin')]);
   nav.innerHTML = buttons.map(([r, l]) => `<button onclick="go('${r}')">${l}</button>`).join('') +
@@ -79,6 +81,11 @@ async function go(route, params = {}) {
     if (route === 'home') return renderHome(params);
     if (route === 'login') return renderLogin();
     if (route === 'register') return renderRegister();
+    if (route === 'costs') return renderCosts();
+    if (route === 'privacy') return renderPrivacy();
+    if (route === 'terms') return renderLegalPage('terms');
+    if (route === 'safety') return renderLegalPage('safety');
+    if (route === 'rules') return renderLegalPage('rules');
 
     if (!getToken()) return renderHome();
     await loadMe();
@@ -106,6 +113,10 @@ async function go(route, params = {}) {
   }
 }
 
+function phasePill(kind) {
+  return `<span class="phase-pill phase-${kind}">${t(`phase.${kind}`)}</span>`;
+}
+
 function findSwapsNearMe() {
   return getToken() ? go('browse') : go('register');
 }
@@ -117,30 +128,37 @@ function renderHome(params = {}) {
         <img src="/img/hero.jpg?v=14" alt="${t('home.heroAlt')}" width="1024" height="471" />
       </div>
       <div class="hero-copy">
+        ${phasePill('pilot')}
         <h1>${t('home.heroTitle')}</h1>
         <p class="lede">${t('home.heroLede')}</p>
         <div class="cta-row">
           <button type="button" class="primary" onclick="findSwapsNearMe()">${t('home.ctaFind')}</button>
+          <button type="button" class="ghost" onclick="go('costs')">${t('home.ctaCosts')}</button>
           <button type="button" class="ghost" onclick="go('home', {section:'safety'})">${t('home.ctaSafe')}</button>
         </div>
+        <p class="muted hero-credit">${t('home.heroCredit')}</p>
       </div>
     </section>
 
     <h2 id="how">${t('home.howTitle')}</h2>
     <div class="how-steps">
       <article class="how-step">
+        ${phasePill('now')}
         <h2>${t('home.step1Title')}</h2>
         <p>${t('home.step1Body')}</p>
       </article>
       <article class="how-step">
+        ${phasePill('pilot')}
         <h2>${t('home.step2Title')}</h2>
         <p>${t('home.step2Body')}</p>
       </article>
       <article class="how-step">
+        ${phasePill('now')}
         <h2>${t('home.step3Title')}</h2>
         <p>${t('home.step3Body')}</p>
       </article>
       <article class="how-step">
+        ${phasePill('now')}
         <h2>${t('home.step4Title')}</h2>
         <p>${t('home.step4Body')}</p>
       </article>
@@ -148,20 +166,24 @@ function renderHome(params = {}) {
 
     <div class="values">
       <div class="value-card mint">
+        ${phasePill('now')}
         <h3>${t('home.value1Title')}</h3>
         <p>${t('home.value1Body')}</p>
       </div>
       <div class="value-card yellow">
+        ${phasePill('now')}
         <h3>${t('home.value2Title')}</h3>
         <p>${t('home.value2Body')}</p>
       </div>
       <div class="value-card pink">
+        ${phasePill('now')}
         <h3>${t('home.value3Title')}</h3>
         <p>${t('home.value3Body')}</p>
       </div>
     </div>
 
     <div class="band" id="safety">
+      ${phasePill('now')}
       <h2>${t('home.safetyTitle')}</h2>
       <ul>
         <li>${t('home.safety1')}</li>
@@ -169,6 +191,7 @@ function renderHome(params = {}) {
         <li>${t('home.safety3')}</li>
         <li>${t('home.safety4')}</li>
         <li>${t('home.safety5')}</li>
+        <li>${t('home.safety6')}</li>
       </ul>
     </div>
 
@@ -182,6 +205,7 @@ function renderHome(params = {}) {
       </ol>
       <div class="cta-row">
         <button type="button" class="primary" onclick="findSwapsNearMe()">${t('home.ctaFind')}</button>
+        <button type="button" class="ghost" onclick="go('costs')">${t('home.ctaCosts')}</button>
         <button type="button" class="ghost" onclick="go('login')">${t('home.alreadyAccount')}</button>
       </div>
     </div>
@@ -192,19 +216,194 @@ function renderHome(params = {}) {
   }
 }
 
+function renderCosts() {
+  app.innerHTML = `
+    <div class="card">
+      <button type="button" class="small" onclick="go('home')">${t('costs.back')}</button>
+      <h2>${t('costs.title')}</h2>
+      <p>${t('costs.intro')}</p>
+    </div>
+    <div class="band">
+      ${phasePill('now')}
+      <h3>${t('costs.joinTitle')}</h3>
+      <p>${t('costs.joinBody')}</p>
+    </div>
+    <div class="band">
+      ${phasePill('pilot')}
+      <h3>${t('costs.deliveryTitle')}</h3>
+      <p>${t('costs.deliveryBody')}</p>
+    </div>
+    <div class="band">
+      ${phasePill('pilot')}
+      <h3>${t('costs.failTitle')}</h3>
+      <p>${t('costs.failBody')}</p>
+    </div>
+    <div class="band">
+      ${phasePill('now')}
+      <h3>${t('costs.cancelTitle')}</h3>
+      <p>${t('costs.cancelBody')}</p>
+    </div>
+    <div class="band">
+      ${phasePill('planned')}
+      <h3>${t('costs.damageTitle')}</h3>
+      <p>${t('costs.damageBody')}</p>
+    </div>
+    <div class="band">
+      ${phasePill('planned')}
+      <h3>${t('costs.plannedTitle')}</h3>
+      <p>${t('costs.plannedBody')}</p>
+    </div>
+    <div class="cta-row" style="margin-bottom:24px;">
+      <button type="button" class="primary" onclick="findSwapsNearMe()">${getToken() ? t('nav.browse') : t('nav.register')}</button>
+    </div>
+  `;
+}
+
+const POLICY_VERSION_FALLBACK = '2026-08-21.2';
+const AGE_BANDS_FALLBACK = ['0-2', '3-5', '6-8', '9-12', '13-17'];
+let privacyMeta = { policy_version: POLICY_VERSION_FALLBACK, age_bands: AGE_BANDS_FALLBACK };
+
+async function loadPrivacyMeta() {
+  try {
+    privacyMeta = await api('/parents/privacy-meta');
+  } catch (_) {
+    privacyMeta = { policy_version: POLICY_VERSION_FALLBACK, age_bands: AGE_BANDS_FALLBACK };
+  }
+  return privacyMeta;
+}
+
+function ageBandLabel(band) {
+  if (!band) return '';
+  const key = `dash.ageBand.${band}`;
+  const label = t(key);
+  return label === key ? band : label;
+}
+
+function policyLink(route, label) {
+  return `<a href="#${route}" onclick="event.preventDefault(); go('${route}')">${label}</a>`;
+}
+
+function policyLinksHtml() {
+  return `<p class="policy-links">
+    ${policyLink('privacy', t('nav.privacy'))} ·
+    ${policyLink('terms', t('nav.terms'))} ·
+    ${policyLink('safety', t('nav.safety'))} ·
+    ${policyLink('rules', t('nav.rules'))} ·
+    ${policyLink('costs', t('nav.costs'))}
+  </p>`;
+}
+
+function supportLineHtml() {
+  const support = privacyMeta.support || {};
+  const email = support.email;
+  const contact = email
+    ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`
+    : t('support.unconfigured');
+  return `<p class="support-line">${t('support.line', {
+    contact,
+    hours: support.response_hours || 48,
+    emergency: support.emergency || '112'
+  })}</p>`;
+}
+
+function legalVersionLabel() {
+  return t('privacy.version', {
+    version: escapeHtml(privacyMeta.legal_pack_version || privacyMeta.policy_version || POLICY_VERSION_FALLBACK)
+  });
+}
+
+async function renderLegalPage(pageKey) {
+  await loadPrivacyMeta();
+  const page = getLegalCopy(pageKey);
+  const sections = (page.sections || []).map((section) => `
+    <div class="band">
+      <h3>${escapeHtml(section.title)}</h3>
+      <p>${section.body}</p>
+    </div>
+  `).join('');
+  app.innerHTML = `
+    <div class="card">
+      <button type="button" class="small" onclick="go('home')">${t('privacy.back')}</button>
+      <h2>${escapeHtml(page.title)}</h2>
+      <p class="muted">${legalVersionLabel()}</p>
+      ${policyLinksHtml()}
+      <p>${page.intro || ''}</p>
+    </div>
+    ${sections}
+    <div class="band">
+      <h3>${t('support.label')}</h3>
+      ${supportLineHtml()}
+    </div>
+  `;
+}
+
+async function renderPrivacy() {
+  await loadPrivacyMeta();
+  const version = privacyMeta.policy_version || POLICY_VERSION_FALLBACK;
+  app.innerHTML = `
+    <div class="card">
+      <button type="button" class="small" onclick="go('home')">${t('privacy.back')}</button>
+      <h2>${t('privacy.title')}</h2>
+      <p class="muted">${t('privacy.version', { version: escapeHtml(version) })}</p>
+      ${policyLinksHtml()}
+      <p>${t('privacy.intro')}</p>
+    </div>
+    <div class="band">
+      <h3>${t('privacy.childTitle')}</h3>
+      <p>${t('privacy.childBody')}</p>
+    </div>
+    <div class="band">
+      <h3>${t('privacy.parentTitle')}</h3>
+      <p>${t('privacy.parentBody')}</p>
+    </div>
+    <div class="band">
+      <h3>${t('privacy.shareTitle')}</h3>
+      <ul>
+        <li>${t('privacy.share1')}</li>
+        <li>${t('privacy.share2')}</li>
+        <li>${t('privacy.share3')}</li>
+      </ul>
+    </div>
+    <div class="band">
+      <h3>${t('privacy.retainTitle')}</h3>
+      <p>${t('privacy.retainBody')}</p>
+    </div>
+    <div class="band">
+      <h3>${t('privacy.deleteTitle')}</h3>
+      <p>${t('privacy.deleteBody')}</p>
+    </div>
+    <div class="band">
+      <h3>${t('privacy.legalTitle')}</h3>
+      <p>${t('privacy.legalBody')}</p>
+      ${supportLineHtml()}
+    </div>
+  `;
+}
+
 // ---------- AUTH VIEWS ----------
-function renderRegister() {
+async function renderRegister() {
+  await loadPrivacyMeta();
+  const version = privacyMeta.legal_pack_version || privacyMeta.policy_version || POLICY_VERSION_FALLBACK;
   app.innerHTML = `
     <div class="card">
       ${languagePickerHtml()}
       <button type="button" class="small" onclick="go('home')">${t('auth.back')}</button>
       <h2>${t('auth.registerTitle')}</h2>
       <p class="muted">${t('auth.registerHint')}</p>
+      <p class="notice">${t('auth.registerNotice')} <a href="#costs" onclick="event.preventDefault(); go('costs')">${t('home.ctaCosts')}</a></p>
+      ${policyLinksHtml()}
       <form id="regForm">
         <input name="name" placeholder="${t('auth.name')}" required />
         <input name="email" type="email" placeholder="${t('auth.email')}" required />
         <input name="password" type="password" placeholder="${t('auth.password')}" required />
+        <label class="field-label">${t('auth.address')}</label>
+        <p class="field-hint">${t('auth.locationHint')}</p>
         <input name="address_text" placeholder="${t('auth.address')}" />
+        <label class="consent-row">
+          <input type="checkbox" name="agreements_accepted" required />
+          <span>${t('auth.consentLabel', { version: escapeHtml(version) })}</span>
+        </label>
+        <p class="muted">${t('auth.noMarketing')}</p>
         <button class="primary" type="submit">${t('auth.createAccount')}</button>
       </form>
       <p id="msg"></p>
@@ -212,9 +411,19 @@ function renderRegister() {
   `;
   document.getElementById('regForm').onsubmit = async (e) => {
     e.preventDefault();
-    const f = new FormData(e.target);
+    const f = e.target;
     try {
-      const data = await api('/parents/register', { method: 'POST', body: Object.fromEntries(f) });
+      const data = await api('/parents/register', {
+        method: 'POST',
+        body: {
+          name: f.name.value,
+          email: f.email.value,
+          password: f.password.value,
+          address_text: f.address_text.value,
+          agreements_accepted: f.agreements_accepted.checked,
+          locale: getLang()
+        }
+      });
       setToken(data.token);
       go('dashboard');
     } catch (err) {
@@ -352,11 +561,22 @@ async function deleteListing(id) {
 // ---------- DASHBOARD ----------
 async function renderDashboard() {
   if (!state.parent) return go('login');
+  await loadPrivacyMeta();
+  const version = privacyMeta.policy_version || POLICY_VERSION_FALLBACK;
+  const bands = privacyMeta.age_bands || AGE_BANDS_FALLBACK;
+  const childrenHtml = state.children.length
+    ? state.children.map((c) => `
+        <div class="child-manage">
+          <span class="child-chip">${c.avatar_emoji} ${escapeHtml(c.display_name)}${c.age_band ? ` · ${escapeHtml(ageBandLabel(c.age_band))}` : ''}</span>
+          <button type="button" class="small danger" onclick="deleteChildProfile('${c.id}')">${t('dash.deleteChild')}</button>
+        </div>
+      `).join('')
+    : `<em>${t('dash.noChildren')}</em>`;
   app.innerHTML = `
     <div class="card">
       <h2>${t('dash.welcome', { name: escapeHtml(state.parent?.name || t('dash.there')) })}</h2>
       <p class="muted">${t('dash.childrenHint')}</p>
-      <div>${state.children.map(c => `<span class="child-chip">${c.avatar_emoji} ${escapeHtml(c.display_name)} ${c.birth_year ? `(b. ${c.birth_year})` : ''}</span>`).join('') || `<em>${t('dash.noChildren')}</em>`}</div>
+      <div class="child-list">${childrenHtml}</div>
     </div>
     <div class="card">
       <div class="card-head">
@@ -368,25 +588,48 @@ async function renderDashboard() {
     </div>
     <div class="card">
       <h3>${t('dash.addChild')}</h3>
+      <p class="muted">${t('dash.childNameHint')}</p>
       <form id="childForm">
-        <input name="display_name" placeholder="${t('dash.childName')}" required />
-        <input name="birth_year" type="number" placeholder="${t('dash.birthYear')}" />
+        <input name="display_name" maxlength="40" placeholder="${t('dash.childName')}" required />
+        <label class="field-label">${t('dash.ageRange')}</label>
+        <select name="age_band" required>
+          <option value="">${t('dash.ageChoose')}</option>
+          ${bands.map((band) => `<option value="${band}">${escapeHtml(ageBandLabel(band))}</option>`).join('')}
+        </select>
         <select name="avatar_emoji">
           <option value="🧒">${t('dash.avatarNeutral')}</option>
           <option value="👦">${t('dash.avatarBoy')}</option>
           <option value="👧">${t('dash.avatarGirl')}</option>
           <option value="🦸">${t('dash.avatarHero')}</option>
         </select>
+        <label class="consent-row">
+          <input type="checkbox" name="guardian_confirmed" required />
+          <span>${t('dash.guardianLabel', { version: escapeHtml(version) })}</span>
+        </label>
         <button class="primary" type="submit">${t('dash.addChildBtn')}</button>
       </form>
       <p id="msg"></p>
     </div>
+    <div class="card">
+      <h3>${t('dash.familyData')}</h3>
+      <p class="muted">${t('privacy.deleteBody')}</p>
+      <button type="button" class="danger" onclick="deleteFamilyAccountUi()">${t('dash.deleteAccount')}</button>
+    </div>
   `;
   document.getElementById('childForm').onsubmit = async (e) => {
     e.preventDefault();
-    const f = new FormData(e.target);
+    const f = e.target;
     try {
-      await api('/children', { method: 'POST', body: Object.fromEntries(f) });
+      await api('/children', {
+        method: 'POST',
+        body: {
+          display_name: f.display_name.value,
+          age_band: f.age_band.value,
+          avatar_emoji: f.avatar_emoji.value,
+          guardian_confirmed: f.guardian_confirmed.checked,
+          locale: getLang()
+        }
+      });
       await loadMe();
       await renderDashboard();
     } catch (err) {
@@ -394,6 +637,34 @@ async function renderDashboard() {
     }
   };
   await fillListedItems('dashItems');
+}
+
+async function deleteChildProfile(id) {
+  const child = state.children.find((c) => c.id === id);
+  const name = child?.display_name || '';
+  if (!confirm(t('dash.deleteChildConfirm', { name }))) return;
+  try {
+    await api(`/children/${id}`, { method: 'DELETE' });
+    if (state.activeChildId === id) state.activeChildId = null;
+    await loadMe();
+    await renderDashboard();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deleteFamilyAccountUi() {
+  const typed = prompt(t('dash.deleteAccountConfirm'));
+  if (typed !== t('dash.deleteAccountPrompt')) return;
+  try {
+    await api('/parents/me', { method: 'DELETE' });
+    clearToken();
+    state.parent = null;
+    state.children = [];
+    go('home');
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 // ---------- ADD ITEM (with AI evaluation + 3D preview) ----------
@@ -414,6 +685,7 @@ async function renderAddItem() {
     <div class="card">
       <h2>${t('listings.addToy')}</h2>
       <p class="muted">${t('listings.addHint')}</p>
+      <p class="notice">${t('listings.photoSafety')} ${policyLink('rules', t('nav.rules'))} · ${policyLink('safety', t('nav.safety'))}</p>
       <div class="row">${t('listings.listingAs')} ${childChips('window.__selectChild')}</div>
       <form id="itemForm">
         <select name="category">
@@ -673,7 +945,8 @@ async function loadNearby() {
         <h3>${escapeHtml(item.title)}</h3>
         <span class="badge ${conditionBadgeClass(item.ai_condition_score || 0)}">${escapeHtml(conditionLabel(item.ai_condition_label))} (${item.ai_condition_score}/10)</span>
         <div class="item-meta">
-          <p class="muted">${t('browse.by', { avatar: item.owner_avatar || '', name: item.owner_name || '' })}</p>
+          <p class="muted">${t('browse.by', { avatar: item.owner_avatar || '', name: item.owner_name || '' })}
+            ${safetyActions('listing', item.id, 'family')}</p>
           <p class="distance">${t('browse.away', { km: item.distance_km })}</p>
           <div class="item-actions">
             <button class="small" onclick="proposeExchange('${item.id}')">${t('browse.propose')}</button>
@@ -729,6 +1002,7 @@ async function renderExchanges() {
           <div class="row">
             ${ex.status === 'pending_parent_approval' ? `<button class="small" onclick="approveExchange('${ex.id}')">${t('exchanges.approve')}</button><button class="small" style="background:#f44336" onclick="declineExchange('${ex.id}')">${t('exchanges.decline')}</button>` : ''}
             <button class="small" onclick="go('exchange-detail', {id:'${ex.id}'})">${t('exchanges.openChat')}</button>
+            ${safetyActions('exchange', ex.id)}
           </div>
         </div>
       `).join('')}
@@ -737,6 +1011,7 @@ async function renderExchanges() {
 }
 
 async function approveExchange(id) {
+  if (!confirm(t('exchanges.approveConfirm'))) return;
   try {
     const result = await api(`/exchanges/${id}/approve`, { method: 'POST' });
     if (result.status === 'delivery_requested') {
@@ -759,9 +1034,11 @@ async function renderExchangeDetail(id) {
     <div class="card">
       <button class="small" onclick="go('exchanges')">${t('exchanges.back')}</button>
       <h2>${t('exchanges.chatTitle')}</h2>
+      ${safetyActions('exchange', id)}
       <div id="chatLog">${messages.map(m => `
         <div class="msg-bubble ${m.sender_child_id === state.activeChildId ? 'mine' : ''}">
-          ${m.avatar_emoji} <strong>${m.sender_name}:</strong> ${escapeHtml(tCanned(m.text))}
+          ${m.avatar_emoji} <strong>${escapeHtml(m.sender_name)}:</strong> ${escapeHtml(tCanned(m.text))}
+          ${m.sender_child_id === state.activeChildId ? '' : `<button type="button" class="linkish" onclick="openReport('message','${m.id}')">${t('exchanges.reportMessage')}</button>`}
         </div>
       `).join('') || `<p class="muted">${t('exchanges.noMessages')}</p>`}</div>
       <div class="row" style="margin-top:16px;">${t('exchanges.sendAs')} ${childChips('window.__selectChildChat')}</div>
@@ -783,16 +1060,102 @@ async function sendCanned(exchangeId, cannedId) {
   } catch (err) { alert(err.message); }
 }
 
+function safetyActions(subjectType, subjectId, includeFamily) {
+  const familyBtn = includeFamily === 'family'
+    ? `<button type="button" class="linkish" onclick="event.stopPropagation(); openReport('family','${subjectId}')">${t('browse.reportFamily')}</button>`
+    : '';
+  return `<span class="safety-actions">
+    <button type="button" class="linkish" onclick="event.stopPropagation(); openReport('${subjectType}','${subjectId}')">${t('report.button')}</button>
+    ${familyBtn}
+    <button type="button" class="linkish" onclick="event.stopPropagation(); blockFamily('${subjectType}','${subjectId}')">${t('report.block')}</button>
+  </span>`;
+}
+
+function closeReportModal() {
+  document.getElementById('reportModal')?.remove();
+}
+
+function openReport(subjectType, subjectId) {
+  closeReportModal();
+  const reasons = ['unsafe_item', 'child_in_photo', 'prohibited', 'hygiene', 'harassment', 'other'];
+  const modal = document.createElement('div');
+  modal.id = 'reportModal';
+  modal.className = 'report-modal';
+  modal.innerHTML = `
+    <div class="report-dialog card" role="dialog" aria-labelledby="reportTitle">
+      <h3 id="reportTitle">${t('report.title')}</h3>
+      <p class="muted">${t('report.hint')}</p>
+      <label class="field-label" for="reportReason">${t('report.reason')}</label>
+      <select id="reportReason">
+        ${reasons.map((reason) => `<option value="${reason}">${t('report.' + reason)}</option>`).join('')}
+      </select>
+      <textarea id="reportDetails" placeholder="${t('report.details')}" maxlength="1000"></textarea>
+      <div class="row">
+        <button type="button" class="primary" onclick="submitReport('${subjectType}','${subjectId}')">${t('report.submit')}</button>
+        <button type="button" class="small" onclick="closeReportModal()">${t('report.cancel')}</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeReportModal(); });
+  document.body.appendChild(modal);
+}
+
+async function submitReport(subjectType, subjectId) {
+  try {
+    await api('/safety/reports', {
+      method: 'POST',
+      body: {
+        subject_type: subjectType,
+        subject_id: subjectId,
+        reason: document.getElementById('reportReason').value,
+        details: document.getElementById('reportDetails').value
+      }
+    });
+    closeReportModal();
+    alert(t('report.sent'));
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function blockFamily(subjectType, subjectId) {
+  if (!confirm(t('report.block'))) return;
+  try {
+    await api('/safety/blocks', {
+      method: 'POST',
+      body: { subject_type: subjectType, subject_id: subjectId }
+    });
+    alert(t('report.blocked'));
+    const route = (window.location.hash || '').replace(/^#/, '').split('/')[0];
+    if (route === 'browse') return renderBrowse();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function resolveReport(id, status, removeListing) {
+  try {
+    await api(`/admin/reports/${id}`, {
+      method: 'POST',
+      body: { status, remove_listing: removeListing }
+    });
+    await renderAdmin();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 // ---------- ADMIN ----------
 async function renderAdmin() {
   if (!isAdmin()) {
     app.innerHTML = `<div class="card error">${t('admin.required')}</div>`;
     return;
   }
-  const [settings, stats, families] = await Promise.all([
+  const [settings, stats, families, reports] = await Promise.all([
     api('/admin/settings'),
     api('/admin/stats'),
-    api('/admin/families')
+    api('/admin/families'),
+    api('/admin/reports')
   ]);
   app.innerHTML = `
     <div class="card">
@@ -814,6 +1177,22 @@ async function renderAdmin() {
         <li>${t('admin.exchanges')}: ${stats.exchanges}</li>
         <li>${t('admin.delivered')}: ${stats.completedExchanges}</li>
       </ul>
+    </div>
+    <div class="card">
+      <h3>${t('admin.reports')}</h3>
+      ${reports.length ? reports.map((r) => `
+        <div class="swap-row">
+          <p><strong>${escapeHtml(r.reason)}</strong> · ${escapeHtml(r.subject_type)} · ${escapeHtml(r.status)}</p>
+          <p class="muted">${escapeHtml(r.reporter_email || '')} → ${escapeHtml(r.reported_email || '')} · ${escapeHtml(formatDate(r.created_at))}</p>
+          ${r.details ? `<p>${escapeHtml(r.details)}</p>` : ''}
+          ${r.status === 'open' ? `
+            <div class="row">
+              <button type="button" class="small" onclick="resolveReport('${r.id}', 'resolved', false)">${t('admin.resolve')}</button>
+              <button type="button" class="small" onclick="resolveReport('${r.id}', 'dismissed', false)">${t('admin.dismiss')}</button>
+              ${r.subject_type === 'listing' || r.subject_type === 'family' ? `<button type="button" class="danger" onclick="resolveReport('${r.id}', 'resolved', true)">${t('admin.removeListing')}</button>` : ''}
+            </div>` : ''}
+        </div>
+      `).join('') : `<p class="muted">${t('admin.noReports')}</p>`}
     </div>
     <div class="card">
       <h3>${t('admin.families')}</h3>
@@ -895,7 +1274,7 @@ async function renderAdminFamily(id) {
     ${children.length ? children.map((child) => `
       <div class="card admin-child">
         <h3>${escapeHtml(child.avatar_emoji || '🧒')} ${escapeHtml(child.display_name)}</h3>
-        <p class="muted">${t('admin.childProfile')} · ${child.birth_year ? `${t('admin.born', { year: child.birth_year })} · ` : ''}${t('admin.added', { date: formatDate(child.created_at) })}</p>
+        <p class="muted">${t('admin.childProfile')} · ${child.age_band ? `${t('admin.ageRange', { band: escapeHtml(ageBandLabel(child.age_band)) })} · ` : ''}${t('admin.added', { date: formatDate(child.created_at) })}</p>
         <h4>${t('admin.listings', { n: child.listings.length })}</h4>
         ${child.listings.length ? child.listings.map(adminListingRow).join('') : `<p class="muted">${t('admin.noListings')}</p>`}
         <h4>${t('admin.exchangesTitle', { n: child.exchanges.length })}</h4>
@@ -914,6 +1293,7 @@ document.getElementById('navToggle')?.addEventListener('click', () => {
   btn.textContent = open ? '✕' : '☰';
 });
 renderNav();
+loadPrivacyMeta().then(() => applyChrome());
 const hash = (location.hash || '').replace(/^#/, '');
 const [initialRoute, initialId] = hash.split('/');
 if (initialRoute) go(initialRoute, initialId ? { id: initialId } : {});

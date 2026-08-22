@@ -8,6 +8,7 @@ const { requireParentAuth } = require('../services/auth');
 const { assertChildOwnership } = require('./children');
 const { evaluateItemPhoto } = require('../services/aiEvaluation');
 const { distanceKm } = require('../services/geo');
+const { publicNearbyListing } = require('../services/privacy');
 const asyncHandler = require('../services/asyncHandler');
 
 const router = express.Router();
@@ -105,20 +106,35 @@ router.get('/nearby', requireParentAuth, asyncHandler(async (req, res) => {
   const radiusKm = await getRadiusKm();
 
   let items = await many(
-    `SELECT items.*, children.display_name as owner_name, children.avatar_emoji as owner_avatar
+    `SELECT items.id, items.title, items.category, items.photo_path,
+            items.ai_condition_score, items.ai_condition_label, items.ai_description,
+            items.lat, items.lng,
+            children.display_name as owner_name, children.avatar_emoji as owner_avatar
      FROM items JOIN children ON items.child_id = children.id
      WHERE items.status = 'available'
        AND items.ai_exchangeable = 1
        AND items.child_id != $1
        AND ($2::text IS NULL OR items.category = $2)
+       AND children.parent_id NOT IN (
+         SELECT blocked_id FROM parent_blocks WHERE blocker_id = $3
+         UNION
+         SELECT blocker_id FROM parent_blocks WHERE blocked_id = $3
+       )
      ORDER BY items.created_at DESC`,
-    [child_id, category || null]
+    [child_id, category || null, req.parentId]
   );
 
   items = items
-    .map(item => ({ ...item, distance_km: Math.round(distanceKm(parent.lat, parent.lng, item.lat, item.lng) * 10) / 10 }))
-    .filter(item => item.distance_km <= radiusKm)
-    .sort((a, b) => a.distance_km - b.distance_km);
+    .map((item) => ({
+      item,
+      rawKm: distanceKm(parent.lat, parent.lng, item.lat, item.lng)
+    }))
+    .filter(({ rawKm }) => rawKm <= radiusKm)
+    .sort((a, b) => a.rawKm - b.rawKm)
+    .map(({ item, rawKm }) => publicNearbyListing({
+      ...item,
+      distance_km: rawKm < 1 ? 1 : Math.round(rawKm)
+    }));
 
   res.json({ radius_km: radiusKm, items });
 }));

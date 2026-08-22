@@ -261,3 +261,9 @@ Schema is applied automatically on boot (`✔ Postgres schema ready` in deploy l
 
 ## Legal note
 This handles children's data and in-app matching between minors. Before any real users touch it, get proper legal review for COPPA (US) / GDPR-K (EU) parental consent requirements, data retention policy, and driver background-check requirements for the delivery side.
+
+Launch-readiness (public claims vs working service, fees, artwork): `docs/P1-launch-readiness.md`, `docs/fees-and-delivery.md`, `frontend/img/ASSET_LICENSE.md`.
+
+Guardian consent, child-data minimization, and deletion: `docs/data-map-and-retention.md`, `docs/legal-review-request.md` (sign-off **pending**). In-app notice: `#privacy`.
+
+Legal pack at decision points (Privacy, Terms, Family Safety, Community Rules, reporting): `docs/legal-and-safety.md`. Set `SUPPORT_EMAIL` so the footer shows a real mailbox.

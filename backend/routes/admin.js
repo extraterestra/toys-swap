@@ -60,7 +60,7 @@ router.get('/families/:id', asyncHandler(async (req, res) => {
   if (!parent) return res.status(404).json({ error: 'Family not found' });
 
   const children = await many(
-    `SELECT id, display_name, birth_year, avatar_emoji, created_at
+    `SELECT id, display_name, age_band, avatar_emoji, created_at
      FROM children WHERE parent_id = $1 ORDER BY created_at ASC`,
     [parent.id]
   );
@@ -102,6 +102,37 @@ router.get('/families/:id', asyncHandler(async (req, res) => {
       )
     }))
   });
+}));
+
+router.get('/reports', asyncHandler(async (req, res) => {
+  const rows = await many(
+    `SELECT r.id, r.subject_type, r.subject_id, r.reason, r.details, r.status, r.created_at,
+            rp.email AS reporter_email, tp.email AS reported_email
+     FROM safety_reports r
+     LEFT JOIN parents rp ON r.reporter_parent_id = rp.id
+     LEFT JOIN parents tp ON r.reported_parent_id = tp.id
+     ORDER BY r.created_at DESC
+     LIMIT 100`
+  );
+  res.json(rows);
+}));
+
+router.post('/reports/:id', asyncHandler(async (req, res) => {
+  const report = await one('SELECT * FROM safety_reports WHERE id = $1', [req.params.id]);
+  if (!report) return res.status(404).json({ error: 'Report not found' });
+
+  const status = req.body.status === 'dismissed' ? 'dismissed' : 'resolved';
+  await query('UPDATE safety_reports SET status = $1 WHERE id = $2', [status, report.id]);
+
+  if (req.body.remove_listing && (report.subject_type === 'listing' || report.subject_type === 'family')) {
+    await query(
+      `UPDATE items SET status = 'removed', moderation_status = 'rejected' WHERE id = $1`,
+      [report.subject_id]
+    );
+  }
+
+  const updated = await one('SELECT * FROM safety_reports WHERE id = $1', [report.id]);
+  res.json(updated);
 }));
 
 module.exports = router;
